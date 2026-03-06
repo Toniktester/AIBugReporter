@@ -1,0 +1,236 @@
+/* New Bug Styles */
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background-color: var(--background);
+    color: var(--text-primary);
+    padding: 2rem 3rem;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+.headerLeft {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.backBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    transition: color 0.2s;
+    font-size: 0.9rem;
+}
+
+.backBtn:hover {
+    color: var(--text-primary);
+}
+
+.topbar h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.card {
+    padding: 2rem;
+    border-radius: 1rem;
+    background: rgba(30, 30, 45, 0.4);
+    border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
+}
+
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.formGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.formGroup label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.required {
+    color: #fca5a5;
+}
+
+.textarea,
+.select,
+.input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.textarea:focus,
+.select:focus,
+.input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+.readOnly {
+    background: rgba(255, 255, 255, 0.02) !important;
+    color: var(--text-muted) !important;
+    cursor: not-allowed;
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.25rem;
+}
+
+.submitBtn {
+    background: var(--primary-gradient);
+    color: white;
+    border: none;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.submitBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px -5px var(--primary-color);
+}
+
+.submitBtn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.errorBanner {
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+/* V2 Drag & Drop Upload Styles */
+.dropzone {
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dropzone:hover, .dropzoneActive {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.dropIcon {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.imagePreviewContainer {
+    position: relative;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.imagePreview {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.imageOverlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.analyzingBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--primary-color);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 2rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.removeImageBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    border-radius: 0.25rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.removeImageBtn:hover {
+    background: #ef4444;
+}
+
+.splitRow {
+    display: flex;
+    gap: 1rem;
+}
+.splitRow > * {
+    flex: 1;
+}
