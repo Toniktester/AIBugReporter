@@ -1,10 +1,17 @@
+'use client'
+
 import { signup } from './actions'
 import Link from 'next/link'
 import styles from '../login/page.module.css' // Reusing login styles for consistency
 import { Bug } from 'lucide-react'
+import { useActionState } from 'react'
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-    const params = await searchParams;
+const initialState = {
+    error: null as string | null,
+}
+
+export default function SignupPage() {
+    const [state, formAction, isPending] = useActionState(signup, initialState);
 
     return (
         <div className={styles.container}>
@@ -15,13 +22,13 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                     <p>Join the AI Bug Reporter platform</p>
                 </div>
 
-                {params?.error && (
+                {state?.error && (
                     <div className={styles.errorMessage}>
-                        {params.error}
+                        {state.error}
                     </div>
                 )}
 
-                <form className={styles.form}>
+                <form className={styles.form} action={formAction}>
                     <div className={styles.inputGroup}>
                         <label htmlFor="full_name">Full Name</label>
                         <input id="full_name" name="full_name" type="text" required placeholder="John Doe" />
@@ -35,8 +42,8 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
                         <input id="password" name="password" type="password" required placeholder="••••••••" />
                     </div>
 
-                    <button formAction={signup} className={styles.primaryButton}>
-                        Create Account
+                    <button type="submit" disabled={isPending} className={styles.primaryButton}>
+                        {isPending ? 'Creating Account...' : 'Create Account'}
                     </button>
                 </form>
 

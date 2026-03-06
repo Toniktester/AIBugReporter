@@ -1,10 +1,17 @@
+'use client'
+
 import { login } from './actions'
 import Link from 'next/link'
 import styles from './page.module.css'
 import { Bug } from 'lucide-react'
+import { useActionState } from 'react'
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
-    const params = await searchParams;
+const initialState = {
+    error: null as string | null,
+}
+
+export default function LoginPage() {
+    const [state, formAction, isPending] = useActionState(login, initialState);
 
     return (
         <div className={styles.container}>
@@ -15,13 +22,13 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                     <p>Sign in to your AI Bug Reporter account</p>
                 </div>
 
-                {params?.error && (
+                {state?.error && (
                     <div className={styles.errorMessage}>
-                        {params.error}
+                        {state.error}
                     </div>
                 )}
 
-                <form className={styles.form}>
+                <form className={styles.form} action={formAction}>
                     <div className={styles.inputGroup}>
                         <label htmlFor="email">Email</label>
                         <input id="email" name="email" type="email" required placeholder="name@company.com" />
@@ -31,8 +38,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
                         <input id="password" name="password" type="password" required placeholder="••••••••" />
                     </div>
 
-                    <button formAction={login} className={styles.primaryButton}>
-                        Sign In
+                    <button type="submit" disabled={isPending} className={styles.primaryButton}>
+                        {isPending ? 'Signing In...' : 'Sign In'}
                     </button>
                 </form>
 
