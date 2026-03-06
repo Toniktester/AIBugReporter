@@ -127,7 +127,7 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
     }
 
     return (
-        <form onSubmit={handleSubmit} className={styles.formContainer}>
+        <div className={styles.formContainer}>
             {error && (
                 <div className={styles.errorBanner}>
                     <AlertTriangle size={18} /> {error}
@@ -253,11 +253,11 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
                 </select>
             </div>
 
-            <button type="submit" className={styles.submitBtn} disabled={loading || analyzing}>
+            <button onClick={handleSubmit} className={styles.submitBtn} disabled={loading || analyzing}>
                 {loading ? 'Submitting...' : analyzing ? 'Waiting for AI...' :
                     <><Send size={16} /> Submit Bug</>
                 }
             </button>
-        </form>
+        </div>
     )
 }
