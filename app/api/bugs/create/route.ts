@@ -174,6 +174,43 @@ async function syncToJira(config: any, bug: any, aiData: any, parentStoryId: str
         const basicAuth = Buffer.from(`${email}:${apiToken}`).toString('base64');
         const baseUrl = `https://${domain}.atlassian.net/rest/api/3`;
 
+        const contentNodes: any[] = [];
+
+        if (bug.description) {
+            contentNodes.push({ type: "paragraph", content: [{ type: "text", text: bug.description }] });
+        } else {
+            contentNodes.push({ type: "paragraph", content: [{ type: "text", text: 'No description provided.' }] });
+        }
+
+        if (bug.steps_to_reproduce) {
+            contentNodes.push(
+                { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Steps to Reproduce" }] },
+                { type: "paragraph", content: [{ type: "text", text: bug.steps_to_reproduce }] }
+            );
+        }
+
+        if (bug.expected_result) {
+            contentNodes.push(
+                { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Expected Result" }] },
+                { type: "paragraph", content: [{ type: "text", text: bug.expected_result }] }
+            );
+        }
+
+        if (bug.actual_result) {
+            contentNodes.push(
+                { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Actual Result" }] },
+                { type: "paragraph", content: [{ type: "text", text: bug.actual_result }] }
+            );
+        }
+
+        if (bug.environment_info) {
+            const envText = typeof bug.environment_info === 'string' ? bug.environment_info : JSON.stringify(bug.environment_info, null, 2);
+            contentNodes.push(
+                { type: "heading", attrs: { level: 3 }, content: [{ type: "text", text: "Environment Details" }] },
+                { type: "codeBlock", attrs: { language: "json" }, content: [{ type: "text", text: envText }] }
+            );
+        }
+
         // 1. Create Issue
         const issuePayload: any = {
             fields: {
@@ -182,10 +219,7 @@ async function syncToJira(config: any, bug: any, aiData: any, parentStoryId: str
                 description: {
                     type: "doc",
                     version: 1,
-                    content: [
-                        { type: "paragraph", content: [{ type: "text", text: aiData.description || 'No description' }] },
-                        { type: "paragraph", content: [{ type: "text", text: `\nSteps:\n${aiData.steps_to_reproduce}` }] }
-                    ]
+                    content: contentNodes
                 },
                 issuetype: { name: "Bug" }
             }
