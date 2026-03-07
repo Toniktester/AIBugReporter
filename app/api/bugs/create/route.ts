@@ -186,13 +186,6 @@ async function syncToJira(config: any, bug: any, aiData: any, parentStoryId: str
             }
         };
 
-        // Link to parent story if provided (usually set as 'parent' field in Jira Next-gen, or Epic Link in classic. For simplicity we assume Issue Link or Parent)
-        if (parentStoryId) {
-            // Note: Depending on Jira project type, this field structure varies. 
-            // We'll set it as parent.
-            issuePayload.fields.parent = { key: parentStoryId };
-        }
-
         const createRes = await fetch(`${baseUrl}/issue`, {
             method: 'POST',
             headers: {
@@ -205,6 +198,23 @@ async function syncToJira(config: any, bug: any, aiData: any, parentStoryId: str
 
         const createData = await createRes.json();
         const issueKey = createData.key;
+
+        // 1.5 Link to parent story if provided
+        if (issueKey && parentStoryId) {
+            await fetch(`${baseUrl}/issueLink`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${basicAuth}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    type: { name: "Relates" },
+                    inwardIssue: { key: issueKey },
+                    outwardIssue: { key: parentStoryId }
+                })
+            });
+        }
 
         // 2. Post Attachment if exists
         if (issueKey && base64Image) {
