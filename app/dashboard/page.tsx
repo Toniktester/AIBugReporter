@@ -19,56 +19,107 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     // Fetch projects for the filter bar
     const { data: projects } = await supabase.from('projects').select('id, name');
+    
+    // Fetch all Jira integrations
+    let integrQuery = supabase.from('integrations').select('*').eq('provider', 'jira');
+    if (resolvedParams.project) integrQuery = integrQuery.eq('project_id', resolvedParams.project);
+    const { data: jiraIntegrations } = await integrQuery;
 
-    // Get today's start date
+    let allBugsRaw: any[] = [];
+    
+    // Build Dynamic JQL Filters
+    let baseJql = `issuetype = "Bug"`;
+    if (resolvedParams.status) {
+        let mappedStatus = resolvedParams.status;
+        if (mappedStatus === 'open') mappedStatus = "To Do";
+        if (mappedStatus === 'in_progress') mappedStatus = "In Progress";
+        if (mappedStatus === 'resolved' || mappedStatus === 'closed') mappedStatus = "Done";
+        baseJql += ` AND status = "${mappedStatus}"`;
+    }
+    
+    if (resolvedParams.severity) {
+        let mappedPriority = resolvedParams.severity;
+        if (mappedPriority === 'critical') mappedPriority = "Highest";
+        if (mappedPriority === 'high') mappedPriority = "High";
+        if (mappedPriority === 'medium') mappedPriority = "Medium";
+        if (mappedPriority === 'low') mappedPriority = "Low";
+        baseJql += ` AND priority = "${mappedPriority}"`;
+    }
+    
+    if (resolvedParams.start) {
+        // format needs to be yyyy-MM-dd
+        const s = new Date(resolvedParams.start).toISOString().split('T')[0];
+        baseJql += ` AND created >= "${s}"`;
+    }
+    
+    if (resolvedParams.end) {
+        const e = new Date(resolvedParams.end);
+        e.setDate(e.getDate() + 1); // add 1 day for inclusive end
+        const es = e.toISOString().split('T')[0];
+        baseJql += ` AND created < "${es}"`;
+    }
+
+    // Call Jira for each integration
+    if (jiraIntegrations && jiraIntegrations.length > 0) {
+        for (const integration of jiraIntegrations) {
+            if (!integration.config?.domain || !integration.config?.projectKey) continue;
+            const config = integration.config;
+            const basicAuth = Buffer.from(`${config.email}:${config.apiToken}`).toString('base64');
+            const baseUrl = `https://${config.domain}.atlassian.net/rest/api/3/search`;
+            
+            const jql = `project = "${config.projectKey}" AND ${baseJql}`;
+            
+            try {
+                const res = await fetch(baseUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Basic ${basicAuth}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ jql, maxResults: 100, fields: ['summary', 'status', 'priority', 'created'] })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.issues) {
+                        const mappedIssues = data.issues.map((i: any) => {
+                            let sev = 'medium';
+                            const prio = i.fields.priority?.name?.toLowerCase() || '';
+                            if (prio === 'highest') sev = 'critical';
+                            else if (prio === 'high') sev = 'high';
+                            else if (prio === 'low' || prio === 'lowest') sev = 'low';
+                            
+                            let stat = 'open';
+                            const st = i.fields.status?.name?.toLowerCase() || '';
+                            if (st === 'in progress') stat = 'in_progress';
+                            else if (st === 'done' || st === 'resolved') stat = 'resolved';
+                            
+                            return {
+                                id: i.key,
+                                project_id: integration.project_id,
+                                summary: i.fields.summary,
+                                severity: sev,
+                                status: stat,
+                                created_at: i.fields.created
+                            };
+                        });
+                        allBugsRaw = [...allBugsRaw, ...mappedIssues];
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to fetch Jira bugs for project:", config.projectKey, e);
+            }
+        }
+    }
+
+    const allBugs = allBugsRaw || [];
+    
+    // Server-side aggregations for standard stats top bar
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString();
-
-    // Fetch total bugs today
-    const { count: totalBugsToday } = await supabase
-        .from('bugs')
-        .select('*', { count: 'exact', head: true })
-        .eq('reporter_id', user.id)
-        .gte('created_at', today);
-
-    // Fetch critical bugs today
-    const { count: criticalBugsToday } = await supabase
-        .from('bugs')
-        .select('*', { count: 'exact', head: true })
-        .eq('reporter_id', user.id)
-        .eq('severity', 'critical')
-        .gte('created_at', today);
-
-    // Fetch active integrations
-    const { count: activeIntegrations } = await supabase
-        .from('integrations')
-        .select('*', { count: 'exact', head: true });
-
-    // Fetch all bugs for analytics
-    let bugsQuery = supabase
-        .from('bugs')
-        .select('*')
-        .eq('reporter_id', user.id);
-
-    // Apply URL filters
-    if (resolvedParams.project) bugsQuery = bugsQuery.eq('project_id', resolvedParams.project);
-    if (resolvedParams.story) bugsQuery = bugsQuery.eq('jira_story_id', resolvedParams.story);
-    if (resolvedParams.status) bugsQuery = bugsQuery.eq('status', resolvedParams.status);
-    if (resolvedParams.severity) bugsQuery = bugsQuery.eq('severity', resolvedParams.severity);
-    if (resolvedParams.start) bugsQuery = bugsQuery.gte('created_at', new Date(resolvedParams.start).toISOString());
-    if (resolvedParams.end) {
-        const endDate = new Date(resolvedParams.end);
-        endDate.setDate(endDate.getDate() + 1);
-        bugsQuery = bugsQuery.lt('created_at', endDate.toISOString());
-    }
-
-    const { data: allBugsRaw, error: allBugsError } = await bugsQuery;
-
-    if (allBugsError) {
-        console.error("Dashboard Supabase Error:", allBugsError);
-    }
-    const allBugs = allBugsRaw || [];
+    const totalBugsToday = allBugs.filter(b => new Date(b.created_at) >= today).length;
+    const criticalBugsToday = allBugs.filter(b => b.severity === 'critical' && new Date(b.created_at) >= today).length;
 
     return (
         <div className={styles.layout}>
@@ -146,7 +197,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </div>
                         <div className={styles.statData}>
                             <h3>{criticalBugsToday || 0}</h3>
-                            <p>My Critical Bugs Today</p>
+                            <p>Critical Bugs Today (Jira)</p>
                         </div>
                     </div>
 
@@ -156,7 +207,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </div>
                         <div className={styles.statData}>
                             <h3>{totalBugsToday || 0}</h3>
-                            <p>Total Logged Today</p>
+                            <p>Total Logged Today (Jira)</p>
                         </div>
                     </div>
 
@@ -166,7 +217,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         </div>
                         <div className={styles.statData}>
                             <h3>{allBugs?.length || 0}</h3>
-                            <p>Lifetime Bugs Reported</p>
+                            <p>Lifetime Bugs Reported (Jira)</p>
                         </div>
                     </div>
                 </div>
@@ -175,7 +226,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <BugFilterBar projects={projects || []} />
                 </div>
 
-                <DashboardCharts bugs={allBugs || []} />
+                {jiraIntegrations?.length === 0 && (
+                    <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--card-bg)', borderRadius: '12px', marginTop: '2rem', border: '1px solid var(--border-color)' }}>
+                        <h3 style={{ marginBottom: '0.5rem' }}>Jira Connection Required</h3>
+                        <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+                            Bugs are now fetched directly from Atlassian Jira in real-time. Please configure a Jira integration in settings to view your dashboard.
+                        </p>
+                        <Link href="/settings" className={styles.primaryBtn} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                            Configure Jira
+                        </Link>
+                    </div>
+                )}
+
+                {jiraIntegrations && jiraIntegrations.length > 0 && <DashboardCharts bugs={allBugs || []} />}
 
             </main>
         </div>
