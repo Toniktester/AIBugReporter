@@ -62,7 +62,8 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
                 throw new Error(data.error || 'Failed to analyze image');
             }
         } catch (err: any) {
-            setError(err.message);
+            const msg = (err.message && typeof err.message === 'object') ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
+            setError(msg);
         } finally {
             setAnalyzing(false);
         }
@@ -96,7 +97,8 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
                 throw new Error(data.error || 'Failed to generate text bug');
             }
         } catch (err: any) {
-            setError(err.message);
+            const msg = typeof err.message === 'object' ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
+            setError(msg);
         } finally {
             setAnalyzing(false);
         }
@@ -167,7 +169,8 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
             router.push(`/bugs/${data.bug.id}`);
 
         } catch (err: any) {
-            setError(err.message);
+            const msg = typeof err.message === 'object' ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
+            setError(msg);
         } finally {
             setLoading(false);
         }

@@ -1,10 +1,27 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
-
-const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(req: Request) {
     try {
+        // 1. Authenticate user
+        const supabase = await createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ 
+                error: { message: "You must be logged in to generate bug reports", code: 401, status: "Unauthorized" } 
+            }, { status: 401 });
+        }
+
+        // 2. Validate environment
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        if (!apiKey) {
+            return NextResponse.json({ 
+                error: { message: "Gemini API Key is not configured in Netlify environment variables.", code: 500, status: "Internal Server Error" } 
+            }, { status: 500 });
+        }
+
         const body = await req.json();
         const { summary } = body;
 
@@ -12,6 +29,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'No bug summary provided' }, { status: 400 });
         }
 
+        // 3. Initialize Gemini
+        const ai = new GoogleGenAI({ apiKey });
         const prompt = `
             You are an expert QA tester. You have been given a brief, single-line summary of a software bug: "${summary}".
             Based on this short summary, automatically generate a comprehensive, structured bug report.
@@ -19,8 +38,7 @@ export async function POST(req: Request) {
             Return the output strictly in the following JSON schema:
         `;
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+        const response = await ai.getGenerativeModel({ model: 'gemini-1.5-flash' }).generateContent({
             contents: [
                 {
                     role: 'user',
@@ -29,7 +47,7 @@ export async function POST(req: Request) {
                     ]
                 }
             ],
-            config: {
+            generationConfig: {
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: Type.OBJECT,
@@ -46,16 +64,18 @@ export async function POST(req: Request) {
             }
         });
 
-        if (!response.text) {
+        if (!response.response.text()) {
             throw new Error("Failed to generate text content from Gemini");
         }
 
-        const jsonOutput = JSON.parse(response.text);
+        const jsonOutput = JSON.parse(response.response.text());
 
         return NextResponse.json({ success: true, ai_data: jsonOutput });
 
     } catch (e: any) {
         console.error('Gemini Text Error:', e);
-        return NextResponse.json({ error: e.message || 'Failed to generate bug report from text' }, { status: 500 });
+        return NextResponse.json({ 
+            error: { message: e.message || 'Failed to generate bug report from text', code: 500, status: "Internal Server Error" } 
+        }, { status: 500 });
     }
 }
