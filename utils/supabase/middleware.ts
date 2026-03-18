@@ -6,9 +6,17 @@ export async function updateSession(request: NextRequest) {
         request,
     })
 
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    // Fail safe: if env is missing, don't crash middleware
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return supabaseResponse
+    }
+
     const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        supabaseUrl,
+        supabaseAnonKey,
         {
             cookies: {
                 getAll() {
@@ -44,9 +52,17 @@ export async function updateSession(request: NextRequest) {
     }
 
     if (user) {
-        // Fetch the active user's role from the public.users table
-        const { data: roleData } = await supabase.from('users').select('role').eq('id', user.id).single()
-        const role = roleData?.role || 'tester'
+        let role = 'tester'
+        try {
+            // Fetch the active user's role from the public.users table
+            const { data: roleData, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
+            if (!roleError && roleData) {
+                role = roleData.role
+            }
+        } catch (e) {
+            console.error('Middleware role lookup failed:', e)
+            // Fallback to tester role
+        }
 
         // Protect Admin Routes
         if (path.startsWith('/dashboard/admin') && role !== 'admin') {
