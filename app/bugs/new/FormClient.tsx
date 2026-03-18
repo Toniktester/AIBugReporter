@@ -59,11 +59,12 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
                 if (ai.actual_result) setActual(ai.actual_result);
                 if (ai.severity) setSeverity(ai.severity.toLowerCase());
             } else {
-                throw new Error(data.error || 'Failed to analyze image');
+                const errorData = data.error || 'Failed to analyze image';
+                const msg = typeof errorData === 'object' ? (errorData.message || JSON.stringify(errorData)) : errorData;
+                setError(msg);
             }
         } catch (err: any) {
-            const msg = (err.message && typeof err.message === 'object') ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
-            setError(msg);
+            setError(err.message || 'An unexpected connection error occurred');
         } finally {
             setAnalyzing(false);
         }
@@ -87,18 +88,18 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
 
             if (res.ok && data.ai_data) {
                 const ai = data.ai_data;
-                // Don't overwrite their manually typed summary unless it was profoundly improved
                 if (ai.description) setDescription(ai.description);
                 if (ai.steps_to_reproduce) setSteps(ai.steps_to_reproduce);
                 if (ai.expected_result) setExpected(ai.expected_result);
                 if (ai.actual_result) setActual(ai.actual_result);
                 if (ai.severity) setSeverity(ai.severity.toLowerCase());
             } else {
-                throw new Error(data.error || 'Failed to generate text bug');
+                const errorData = data.error || 'Failed to generate text bug';
+                const msg = typeof errorData === 'object' ? (errorData.message || JSON.stringify(errorData)) : errorData;
+                setError(msg);
             }
         } catch (err: any) {
-            const msg = typeof err.message === 'object' ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
-            setError(msg);
+            setError(err.message || 'An unexpected connection error occurred');
         } finally {
             setAnalyzing(false);
         }
@@ -151,7 +152,11 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
             const data = await res.json();
 
             if (!res.ok) {
-                throw new Error(data.error || 'Failed to submit bug report');
+                const errorData = data.error || 'Failed to submit bug report';
+                const msg = typeof errorData === 'object' ? (errorData.message || JSON.stringify(errorData)) : errorData;
+                setError(msg);
+                setLoading(false);
+                return;
             }
 
             // Integrations parsing
@@ -169,9 +174,7 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
             router.push(`/bugs/${data.bug.id}`);
 
         } catch (err: any) {
-            const msg = typeof err.message === 'object' ? JSON.stringify(err.message) : (err.message || 'An unknown error occurred');
-            setError(msg);
-        } finally {
+            setError(err.message || 'An unexpected connection error occurred');
             setLoading(false);
         }
     }
