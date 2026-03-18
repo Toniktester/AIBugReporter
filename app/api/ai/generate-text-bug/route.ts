@@ -38,7 +38,8 @@ export async function POST(req: Request) {
             Return the output strictly in the following JSON schema:
         `;
 
-        const response = await ai.getGenerativeModel({ model: 'gemini-1.5-flash' }).generateContent({
+        const response = await ai.models.generateContent({
+            model: 'gemini-1.5-flash',
             contents: [
                 {
                     role: 'user',
@@ -47,7 +48,7 @@ export async function POST(req: Request) {
                     ]
                 }
             ],
-            generationConfig: {
+            config: {
                 responseMimeType: 'application/json',
                 responseSchema: {
                     type: Type.OBJECT,
@@ -64,11 +65,11 @@ export async function POST(req: Request) {
             }
         });
 
-        if (!response.response.text()) {
+        if (!response.text) {
             throw new Error("Failed to generate text content from Gemini");
         }
 
-        const jsonOutput = JSON.parse(response.response.text());
+        const jsonOutput = JSON.parse(response.text);
 
         return NextResponse.json({ success: true, ai_data: jsonOutput });
 
