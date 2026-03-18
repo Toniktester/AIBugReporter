@@ -39,8 +39,8 @@ export default async function LeadDashboardPage() {
             {/* Lead Sidebar */}
             <aside className={`${styles.sidebar} glass`}>
                 <div className={styles.sidebarHeader}>
-                    <Briefcase className="text-gradient" size={28} />
-                    <h2>Lead Portal</h2>
+                    <img src="/logo.png" alt="AI Reporter Logo" style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                    <h2 style={{ fontSize: '1.4rem' }}>Lead Portal</h2>
                 </div>
 
                 <nav className={styles.sidebarNav}>

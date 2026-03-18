@@ -126,8 +126,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {/* Sidebar */}
             <aside className={`${styles.sidebar} glass`}>
                 <div className={styles.sidebarHeader}>
-                    <Bug className="text-gradient" size={28} />
-                    <h2>AI Reporter</h2>
+                    <img src="/logo.png" alt="AI Reporter Logo" style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                    <h2 style={{ fontSize: '1.4rem' }}>AI Reporter</h2>
                 </div>
 
                 <nav className={styles.sidebarNav}>

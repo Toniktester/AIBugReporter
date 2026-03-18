@@ -2,7 +2,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../page.module.css'
-import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, ShieldAlert } from 'lucide-react'
+import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2 } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
 
 export default async function AdminDashboardPage() {
@@ -30,8 +30,8 @@ export default async function AdminDashboardPage() {
             {/* Admin Sidebar */}
             <aside className={`${styles.sidebar} glass`}>
                 <div className={styles.sidebarHeader}>
-                    <ShieldAlert className="text-gradient" size={28} />
-                    <h2>Admin Portal</h2>
+                    <img src="/logo.png" alt="AI Reporter Logo" style={{ width: '40px', height: '40px', borderRadius: '8px' }} />
+                    <h2 style={{ fontSize: '1.4rem' }}>Admin Portal</h2>
                 </div>
 
                 <nav className={styles.sidebarNav}>
