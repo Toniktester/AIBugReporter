@@ -1,8 +1,9 @@
 import { createClient as createServerClient } from '@/utils/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import { UserPlus, User, Mail, Calendar, ArrowLeft, Users } from 'lucide-react';
+import { UserPlus, User, ArrowLeft, Users } from 'lucide-react';
 import styles from './page.module.css';
+import UserCard from './UserCard';
 
 export default async function UserManagementPage() {
     // Use admin client to bypass RLS and see ALL users
@@ -10,6 +11,10 @@ export default async function UserManagementPage() {
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     let users: any[] = [];
+    // Also get current logged-in admin id (for self-deletion prevention)
+    const serverClient = await createServerClient();
+    const { data: { user: currentAuthUser } } = await serverClient.auth.getUser();
+    const currentUserId = currentAuthUser?.id || '';
 
     if (serviceRoleKey) {
         const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -71,34 +76,7 @@ export default async function UserManagementPage() {
             ) : (
                 <div className={styles.grid}>
                     {users.map((user) => (
-                        <div key={user.id} className={styles.userCard}>
-                            <div className={styles.userHeader}>
-                                <div className={styles.avatar}>
-                                    {user.full_name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
-                                </div>
-                                <div className={styles.userInfo}>
-                                    <h3>{user.full_name || 'Unnamed User'}</h3>
-                                    <span className={`${styles.roleBadge} ${styles[user.role] || ''}`}>
-                                        {roleLabel[user.role] || user.role}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className={styles.userDetails}>
-                                <div className={styles.detailItem}>
-                                    <Mail size={14} />
-                                    <span>{user.email}</span>
-                                </div>
-                                <div className={styles.detailItem}>
-                                    <Calendar size={14} />
-                                    <span>Joined {new Date(user.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                                </div>
-                            </div>
-
-                            <div className={styles.cardActions}>
-                                <button className={styles.editButton}>Edit Roles</button>
-                            </div>
-                        </div>
+                        <UserCard key={user.id} user={user} currentUserId={currentUserId} />
                     ))}
                 </div>
             )}
