@@ -13,18 +13,7 @@ export default async function NewBugPage() {
         redirect('/login')
     }
 
-    // Get project ID for context (just fetching the first one for simplicity in this demo)
-    const { data: projects } = await supabase.from('projects').select('id, name').limit(1)
-    let defaultProject = projects?.[0];
-
-    if (!defaultProject) {
-        const { data: newProject } = await supabase
-            .from('projects')
-            .insert([{ name: 'Demo Project', description: 'Auto-generated for testing purposes', created_by: user.id }])
-            .select('id, name')
-            .single();
-        defaultProject = newProject || undefined;
-    }
+    const { data: projects } = await supabase.from('projects').select('id, name').order('created_at', { ascending: false });
 
     return (
         <div className={styles.layout}>
@@ -39,11 +28,11 @@ export default async function NewBugPage() {
 
             <div className={styles.container}>
                 <div className={`${styles.card} glass`}>
-                    {defaultProject ? (
-                        <FormClient projectId={defaultProject.id} projectName={defaultProject.name} />
+                    {projects && projects.length > 0 ? (
+                        <FormClient projects={projects} />
                     ) : (
                         <div style={{ color: 'var(--text-muted)' }}>
-                            <p>No project found. Please ensure your database is seeded with a project.</p>
+                            <p>No projects found. Please ensure an Administrator has created a project before logging bugs.</p>
                         </div>
                     )}
                 </div>

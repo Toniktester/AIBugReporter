@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import { AlertTriangle, Send, UploadCloud, Sparkles, X, Image as ImageIcon } from 'lucide-react'
 
-export default function FormClient({ projectId, projectName }: { projectId: string; projectName: string }) {
+export default function FormClient({ projects }: { projects: { id: string, name: string }[] }) {
+    const [projectId, setProjectId] = useState(projects[0]?.id || '')
     const [summary, setSummary] = useState('')
     const [description, setDescription] = useState('')
     const [steps, setSteps] = useState('')
@@ -245,8 +246,18 @@ export default function FormClient({ projectId, projectName }: { projectId: stri
             )}
 
             <div className={styles.formGroup}>
-                <label>Project</label>
-                <input type="text" readOnly value={projectName} className={`${styles.input} ${styles.readOnly}`} />
+                <label>Project <span style={{ color: 'var(--danger-color)' }}>*</span></label>
+                <select 
+                    value={projectId} 
+                    onChange={(e) => setProjectId(e.target.value)} 
+                    className={styles.input} 
+                    required
+                >
+                    <option value="" disabled>Select a Project</option>
+                    {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
             </div>
 
             <div className={styles.formGroup}>

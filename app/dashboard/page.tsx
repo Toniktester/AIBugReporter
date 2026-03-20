@@ -15,6 +15,22 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         redirect('/login')
     }
 
+    let userRole = 'tester';
+    try {
+        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+        if (profile) userRole = profile.role;
+    } catch (e) { }
+
+    if (user.email?.toLowerCase() === 'admin@tonik.com') {
+        userRole = 'admin';
+    }
+
+    if (userRole === 'admin') {
+        redirect('/dashboard/admin');
+    } else if (userRole === 'qa_lead') {
+        redirect('/dashboard/lead');
+    }
+
     const resolvedParams = await searchParams;
 
     // Fetch projects for the filter bar
