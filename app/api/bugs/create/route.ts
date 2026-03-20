@@ -16,7 +16,9 @@ export async function POST(req: Request) {
         const body = await req.json();
         const {
             summary, severity, projectId, environmentInfo, consoleLogs, networkLogs,
-            screenshotBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId
+            screenshotBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId,
+            // V10 new fields
+            startDate, dueDate, fixVersion, releaseVersion, labels, assignedTo, postInTeams
         } = body;
 
         if (!summary || !projectId) {
@@ -232,7 +234,7 @@ export async function POST(req: Request) {
         // Rule: Critical Issue Alerts are sent only to Microsoft Teams. 
         // Do not send Critical Alerts via Email/Outlook.
         
-        if (teamsIntegration && teamsIntegration.config?.webhook_url) {
+        if (teamsIntegration && teamsIntegration.config?.webhook_url && (isCritical || postInTeams)) {
             try {
                 const teamsPayload = {
                     "@type": "MessageCard",
