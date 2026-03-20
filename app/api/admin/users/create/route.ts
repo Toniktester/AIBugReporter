@@ -29,8 +29,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Internal email mapping
-        const email = `${username.toLowerCase()}@local.com`;
+        // Internal email mapping - use @tonikbank.com domain
+        const email = `${username.toLowerCase().replace(/[^a-z0-9._-]/g, '')}@tonikbank.com`;
 
         // 3. Initialize Supabase Admin Client (using service role key)
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -61,20 +61,21 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: authError.message }, { status: 400 });
         }
 
-        // 5. Create Profile in public.users
-        const { error: profileError } = await serverSupabase
+        // 5. Create Profile in public.users table using ADMIN client (bypasses RLS)
+        const { error: profileError } = await supabaseAdmin
             .from('users')
-            .insert({
+            .upsert({
                 id: newUser.user.id,
                 email,
-                full_name: fullName,
+                full_name: fullName || username,
                 role
-            });
+            }, { onConflict: 'id' });
 
         if (profileError) {
-            // Cleanup auth user if profile creation fails? 
-            // Better to just report and let admin fix it.
             console.error('Profile creation error:', profileError);
+            // Rollback: delete the auth user so admin can retry cleanly
+            await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
+            return NextResponse.json({ error: `User auth created but profile failed: ${profileError.message}. User has been cleaned up — please retry.` }, { status: 500 });
         }
 
         return NextResponse.json({ success: true, user: newUser.user });
