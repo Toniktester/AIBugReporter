@@ -21,8 +21,7 @@ export default async function SettingsPage() {
         redirect('/dashboard');
     }
 
-    const { data: projects } = await supabase.from('projects').select('id, name').limit(1)
-    const projectId = projects?.[0]?.id;
+    const { data: projects } = await supabase.from('projects').select('id, name').order('name');
 
     return (
         <div className={styles.layout}>
@@ -66,7 +65,7 @@ export default async function SettingsPage() {
                         <h2>Integrations & Webhooks</h2>
                         <p className={styles.description}>Connect your project to external issue trackers or chat applications.</p>
 
-                        <IntegrationsClient projectId={projectId} />
+                        <IntegrationsClient projects={projects || []} />
                     </section>
 
                     <section id="notifications" className={`${styles.card} glass`}>

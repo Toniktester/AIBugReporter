@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Check, X } from 'lucide-react'
+import { Check, X, Building2 } from 'lucide-react'
 import styles from './page.module.css'
 
-export default function IntegrationsClient({ projectId }: { projectId: string }) {
+interface Project { id: string; name: string }
+
+export default function IntegrationsClient({ projects }: { projects: Project[] }) {
+    const [selectedProjectId, setSelectedProjectId] = useState(projects[0]?.id || '')
     const [integrations, setIntegrations] = useState<Record<string, any>>({})
     const [editing, setEditing] = useState<string | null>(null)
     const [configValues, setConfigValues] = useState<any>({})
@@ -12,12 +15,14 @@ export default function IntegrationsClient({ projectId }: { projectId: string })
     const [message, setMessage] = useState('')
 
     useEffect(() => {
-        fetchIntegrations()
-    }, [])
+        if (selectedProjectId) {
+            fetchIntegrations(selectedProjectId)
+        }
+    }, [selectedProjectId])
 
-    const fetchIntegrations = async () => {
+    const fetchIntegrations = async (pid: string) => {
         try {
-            const res = await fetch(`/api/integrations?projectId=${projectId}`)
+            const res = await fetch(`/api/integrations?projectId=${pid}`)
             if (res.ok) {
                 const data = await res.json()
                 const mapping: Record<string, any> = {}
@@ -32,18 +37,20 @@ export default function IntegrationsClient({ projectId }: { projectId: string })
     }
 
     const handleSave = async (provider: string) => {
+        if (!selectedProjectId) return
         setLoading(true)
         setMessage('')
         try {
             const res = await fetch('/api/integrations', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ projectId, provider, config: configValues })
+                body: JSON.stringify({ projectId: selectedProjectId, provider, config: configValues })
             })
             if (res.ok) {
                 setIntegrations(prev => ({ ...prev, [provider]: configValues }))
                 setEditing(null)
-                setMessage(`${provider} connected successfully!`)
+                setMessage(`${provider} connected successfully for the selected project!`)
+                setTimeout(() => setMessage(''), 3000)
             } else {
                 setMessage(`Failed to connect ${provider}`)
             }
@@ -56,7 +63,27 @@ export default function IntegrationsClient({ projectId }: { projectId: string })
 
     return (
         <div className={styles.integrationList}>
-            {message && <div style={{ marginBottom: '1rem', color: '#6366f1', fontSize: '0.9rem' }}>{message}</div>}
+            <div className={styles.projectSelectorCard}>
+                <label className={styles.label}>
+                    <Building2 size={16} /> Configure Integrations for:
+                </label>
+                <select 
+                    value={selectedProjectId} 
+                    onChange={(e) => {
+                        setSelectedProjectId(e.target.value)
+                        setEditing(null)
+                        setMessage('')
+                    }}
+                    className={styles.projectSelect}
+                >
+                    {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+                <p className={styles.hint}>Settings are saved individually for each project.</p>
+            </div>
+
+            {message && <div className={styles.statusMessage}>{message}</div>}
 
             {[
                 { id: 'jira', name: 'Jira Software', desc: 'Create Jira issues automatically when bugs are reported. Attach screenshot natively.', color: '#0052CC', short: 'JRA' },

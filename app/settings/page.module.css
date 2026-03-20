@@ -313,3 +313,55 @@ input:checked + .slider:before {
 .switch.disabled .slider {
     cursor: not-allowed;
 }
+
+.projectSelectorCard {
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.projectSelectorCard label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: #c7d2fe;
+}
+
+.projectSelect {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.projectSelect:focus {
+    border-color: var(--primary-color);
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.statusMessage {
+    background: rgba(74, 222, 128, 0.1);
+    border: 1px solid rgba(74, 222, 128, 0.2);
+    color: #4ade80;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
