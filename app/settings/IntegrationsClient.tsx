@@ -152,8 +152,6 @@ export default function IntegrationsClient({ projectId }: { projectId: string })
             <IntegrationCard id="jira" name="Jira Software" desc="Create Jira issues automatically when bugs are reported. Attach screenshot natively." color="#0052CC" short="JRA" />
             <IntegrationCard id="teams" name="Microsoft Teams" desc="Post error cards to a Teams channel whenever a bug is logged." color="#6264A7" short="TMS" />
             <IntegrationCard id="outlook" name="Microsoft Outlook" desc="Send actionable emails using an Outlook Power Automate Webhook." color="#0078D4" short="OUT" />
-            <IntegrationCard id="azure" name="Azure DevOps" desc="Sync bugs to Azure DevOps Boards." color="#0078D7" short="AZ" />
-            <IntegrationCard id="slack" name="Slack Webhook" desc="Post notifications to a Slack channel." color="#E01E5A" short="SLA" />
         </div>
     )
 }

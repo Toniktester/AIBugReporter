@@ -148,11 +148,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                             <span>Story Reports</span>
                         </Link>
                     </div>
-                    <Link href="/settings" className={styles.navItem}>
-                        <Settings size={20} />
-                        <span>Settings</span>
-                    </Link>
-                </nav>
+                    </nav>
 
                 <div className={styles.sidebarFooter}>
                     <div className={styles.userInfo}>
@@ -230,11 +226,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--card-bg)', borderRadius: '12px', marginTop: '2rem', border: '1px solid var(--border-color)' }}>
                         <h3 style={{ marginBottom: '0.5rem' }}>Jira Connection Required</h3>
                         <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                            Bugs are now fetched directly from Atlassian Jira in real-time. Please configure a Jira integration in settings to view your dashboard.
+                            Bugs are now fetched directly from Atlassian Jira in real-time. Please contact your administrator to verify your project's Jira configuration.
                         </p>
-                        <Link href="/settings" className={styles.primaryBtn} style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
-                            Configure Jira
-                        </Link>
                     </div>
                 )}
 

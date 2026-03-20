@@ -14,6 +14,12 @@ export default async function SettingsPage() {
         redirect('/login')
     }
 
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+
+    if (profile?.role !== 'admin') {
+        redirect('/dashboard');
+    }
+
     const { data: projects } = await supabase.from('projects').select('id, name').limit(1)
     const projectId = projects?.[0]?.id;
 
@@ -84,12 +90,12 @@ export default async function SettingsPage() {
                                 </div>
                                 <input type="checkbox" defaultChecked style={{ width: '20px', height: '20px', accentColor: 'var(--primary-color)' }} />
                             </div>
-                            <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                             <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>Critical Issue Alerts</label>
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Immediate email when a critical bug is logged.</span>
+                                    <label style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>Critical Issue Alerts (Teams Only)</label>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Immediate Microsoft Teams alert when a critical bug is logged. Email is disabled for high-priority noise reduction.</span>
                                 </div>
-                                <input type="checkbox" defaultChecked style={{ width: '20px', height: '20px', accentColor: 'var(--primary-color)' }} />
+                                <input type="checkbox" checked readOnly style={{ width: '20px', height: '20px', accentColor: 'var(--primary-color)', opacity: 0.6 }} />
                             </div>
                             <button type="button" className={styles.primaryBtn} style={{ marginTop: '1.5rem' }}>Save Preferences</button>
                         </form>
