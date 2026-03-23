@@ -165,3 +165,8 @@
 .viewBtn:hover {
     color: var(--primary-hover);
 }
+
+@media (max-width: 768px) {
+    .layout { padding: 1rem; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
+}

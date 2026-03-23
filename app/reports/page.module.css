@@ -175,3 +175,12 @@
     font-weight: 700;
     color: var(--text-primary);
 }
+
+@media (max-width: 768px) {
+    .layout { padding: 1rem; }
+    .statsGrid, .chartsGrid { grid-template-columns: 1fr; gap: 1rem; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .actions { width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+    .statCard { padding: 1.25rem; }
+    .statValue { font-size: 2.25rem; }
+}
