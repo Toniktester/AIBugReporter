@@ -7,11 +7,12 @@ import styles from './page.module.css'
 import { LogOut, LayoutDashboard, Bug, Settings, BarChart2 } from 'lucide-react'
 import DashboardCharts from './DashboardCharts'
 import BugFilterBar from '@/components/BugFilterBar'
+import { fetchJiraBugs } from '@/utils/jira'
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<any> }) {
     const supabase = await createClient()
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user } = {} } = await supabase.auth.getUser()
 
     if (!user) {
         redirect('/login')
@@ -37,13 +38,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
     // Fetch projects for the filter bar
     const { data: projects } = await supabase.from('projects').select('id, name');
-    
-    // Fetch all Jira integrations
-    let integrQuery = supabase.from('integrations').select('*').eq('provider', 'jira');
-    if (resolvedParams.project) integrQuery = integrQuery.eq('project_id', resolvedParams.project);
-    const { data: jiraIntegrations } = await integrQuery;
-
-    let allBugsRaw: any[] = [];
     
     // Build Dynamic JQL Filters
     let baseJql = `issuetype = "Bug"`;
@@ -77,79 +71,19 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
         baseJql += ` AND created < "${es}"`;
     }
 
-    // Call Jira for each integration
-    if (jiraIntegrations && jiraIntegrations.length > 0) {
-        for (const integration of jiraIntegrations) {
-            if (!integration.config?.domain || !integration.config?.projectKey) continue;
-            const config = integration.config;
-            const basicAuth = Buffer.from(`${config.email}:${config.apiToken}`).toString('base64');
-            const baseUrl = `https://${config.domain}.atlassian.net/rest/api/3/search`;
-            
-            const jql = `project = "${config.projectKey}" AND ${baseJql}`;
-            
-            try {
-                let startAt = 0;
-                let fetchMore = true;
-                while (fetchMore) {
-                    const res = await fetch(baseUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Basic ${basicAuth}`,
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({ jql, startAt, maxResults: 100, fields: ['summary', 'status', 'priority', 'created'] })
-                    });
-                    
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.issues) {
-                            const mappedIssues = data.issues.map((i: any) => {
-                                let sev = 'medium';
-                                const prio = i.fields.priority?.name?.toLowerCase() || '';
-                                if (prio === 'highest') sev = 'critical';
-                                else if (prio === 'high') sev = 'high';
-                                else if (prio === 'low' || prio === 'lowest') sev = 'low';
-                                
-                                let stat = 'open';
-                                const st = i.fields.status?.name?.toLowerCase() || '';
-                                if (st === 'in progress') stat = 'in_progress';
-                                else if (st === 'done' || st === 'resolved') stat = 'resolved';
-                                
-                                return {
-                                    id: i.key,
-                                    project_id: integration.project_id,
-                                    summary: i.fields.summary,
-                                    severity: sev,
-                                    status: stat,
-                                    created_at: i.fields.created
-                                };
-                            });
-                            allBugsRaw = [...allBugsRaw, ...mappedIssues];
-                        }
-                        
-                        if (startAt + 100 >= (data.total || 0)) {
-                            fetchMore = false;
-                        } else {
-                            startAt += 100;
-                        }
-                    } else {
-                        fetchMore = false;
-                    }
-                }
-            } catch (e) {
-                console.error("Failed to fetch Jira bugs for project:", config.projectKey, e);
-            }
-        }
-    }
+    // Fetch Jira bugs using unified helper
+    const { bugs: allBugsRaw, integrations: jiraIntegrations } = await fetchJiraBugs(supabase as any, 
+        resolvedParams.project ? [resolvedParams.project] : undefined, 
+        baseJql
+    );
 
     const allBugs = allBugsRaw || [];
     
     // Server-side aggregations for standard stats top bar
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const totalBugsToday = allBugs.filter(b => new Date(b.created_at) >= today).length;
-    const criticalBugsToday = allBugs.filter(b => b.severity === 'critical' && new Date(b.created_at) >= today).length;
+    const totalBugsToday = allBugs.filter((b: any) => new Date(b.created_at) >= today).length;
+    const criticalBugsToday = allBugs.filter((b: any) => (b.severity === 'critical' || b.severity === 'high') && new Date(b.created_at) >= today).length;
 
     return (
         <div className={styles.layout}>
@@ -169,15 +103,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         <Bug size={20} />
                         <span>My Bugs</span>
                     </Link>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Link href="/reports" className={styles.navItem}>
-                            <BarChart2 size={20} />
-                            <span>Reports</span>
-                        </Link>
-                        <Link href="/reports/story" className={styles.navItem} style={{ paddingLeft: '3rem', fontSize: '0.9rem' }}>
-                            <span>Story Reports</span>
-                        </Link>
-                    </div>
+                    <Link href="/reports" className={styles.navItem}>
+                        <BarChart2 size={20} />
+                        <span>Reports</span>
+                    </Link>
                     </nav>
 
                 <div className={styles.sidebarFooter}>

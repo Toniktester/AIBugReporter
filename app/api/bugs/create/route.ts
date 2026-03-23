@@ -16,14 +16,14 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         const {
-            summary, severity, projectId, environmentInfo, consoleLogs, networkLogs,
-            screenshotBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId,
+            summary, severity, environmentInfo, consoleLogs, networkLogs,
+            screenshotsBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId,
             // V10 new fields
             startDate, dueDate, fixVersion, releaseVersion, labels, assignedTo, postInTeams
         } = body;
 
-        if (!summary || !projectId) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!summary) {
+            return NextResponse.json({ error: 'Missing required field: summary' }, { status: 400 });
         }
 
         // 1. Resolve AI Fields
@@ -58,8 +58,7 @@ export async function POST(req: Request) {
         // 2. Fetch Integrations (Jira is required now)
         const { data: integrations } = await supabase
             .from('integrations')
-            .select('*')
-            .eq('project_id', projectId);
+            .select('*');
 
         const jiraIntegration = integrations?.find(i => i.provider === 'jira');
         const teamsIntegration = integrations?.find(i => i.provider === 'teams');
@@ -76,7 +75,7 @@ export async function POST(req: Request) {
         if (assignedTo) {
             try {
                 const { createClient: createAdminClient } = require('@supabase/supabase-js');
-                const sbAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+                const sbAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^"|"$/g, '') || '', process.env.SUPABASE_SERVICE_ROLE_KEY?.replace(/^"|"$/g, '') || '', {
                     auth: { autoRefreshToken: false, persistSession: false }
                 });
                 
@@ -108,14 +107,13 @@ export async function POST(req: Request) {
             // Using a simple text search for duplicates
             const jql = `project = "${jiraConfig.projectKey}" AND summary ~ "${escapedSummary}"`;
 
-            const searchRes = await fetch(`${baseUrl}/search`, {
-                method: 'POST',
+            const qs = `jql=${encodeURIComponent(jql)}&maxResults=5&fields=summary,status`;
+            const searchRes = await fetch(`${baseUrl}/search/jql?${qs}`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Basic ${basicAuth}`,
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json'
-                },
-                body: JSON.stringify({ jql, maxResults: 1 })
+                }
             });
 
             if (searchRes.ok) {
@@ -265,32 +263,35 @@ export async function POST(req: Request) {
             }
         }
 
-        // 6. Push Attachment to Jira
-        if (issueKey && screenshotBase64) {
-            try {
-                const boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
-                const base64Data = screenshotBase64.replace(/^data:image\/\w+;base64,/, '');
-                const buffer = Buffer.from(base64Data, 'base64');
+        // 6. Push Attachments to Jira
+        if (issueKey && screenshotsBase64 && screenshotsBase64.length > 0) {
+            for (let i = 0; i < screenshotsBase64.length; i++) {
+                try {
+                    const base64Str = screenshotsBase64[i];
+                    const boundary = "----WebKitFormBoundary7MA4YWxkTrZu0gW";
+                    const base64Data = base64Str.replace(/^data:image\/\w+;base64,/, '');
+                    const buffer = Buffer.from(base64Data, 'base64');
 
-                const multipartBody = Buffer.concat([
-                    Buffer.from(`--${boundary}\r\n`),
-                    Buffer.from(`Content-Disposition: form-data; name="file"; filename="screenshot.png"\r\n`),
-                    Buffer.from('Content-Type: image/png\r\n\r\n'),
-                    buffer,
-                    Buffer.from(`\r\n--${boundary}--\r\n`)
-                ]);
+                    const multipartBody = Buffer.concat([
+                        Buffer.from(`--${boundary}\r\n`),
+                        Buffer.from(`Content-Disposition: form-data; name="file"; filename="screenshot_${i+1}.png"\r\n`),
+                        Buffer.from('Content-Type: image/png\r\n\r\n'),
+                        buffer,
+                        Buffer.from(`\r\n--${boundary}--\r\n`)
+                    ]);
 
-                await fetch(`${baseUrl}/issue/${issueKey}/attachments`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Basic ${basicAuth}`,
-                        'X-Atlassian-Token': 'no-check',
-                        'Content-Type': `multipart/form-data; boundary=${boundary}`
-                    },
-                    body: multipartBody
-                });
-            } catch (e) {
-                console.error("Jira attachment error", e);
+                    await fetch(`${baseUrl}/issue/${issueKey}/attachments`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Basic ${basicAuth}`,
+                            'X-Atlassian-Token': 'no-check',
+                            'Content-Type': `multipart/form-data; boundary=${boundary}`
+                        },
+                        body: multipartBody
+                    });
+                } catch (e) {
+                    console.error("Jira attachment error", e);
+                }
             }
         }
 

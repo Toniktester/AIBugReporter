@@ -1,11 +1,13 @@
 export const dynamic = 'force-dynamic';
 
 import { createClient } from '@/utils/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../page.module.css'
 import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2 } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
+import { fetchJiraBugs } from '@/utils/jira'
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient()
@@ -19,14 +21,18 @@ export default async function AdminDashboardPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
 
-    // Global counts
-    const { count: criticalBugs } = await supabase.from('bugs').select('*', { count: 'exact', head: true }).eq('severity', 'critical')
-    const { count: totalBugs } = await supabase.from('bugs').select('*', { count: 'exact', head: true })
-    // Note: totalUsers reflects all users in the public.users table (now correctly populated via admin client)
-    const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true })
-
-    // Fetch all bugs for unified analytics
-    const { data: allBugs } = await supabase.from('bugs').select('*')
+    // Fetch all bugs from Jira for unified analytics
+    const { bugs: allBugs } = await fetchJiraBugs(supabase as any);
+    
+    // Global counts mapped from Jira (We group Critical and High priorities together as 'Urgent' metrics for the dashboard)
+    const criticalBugs = allBugs.filter((b: any) => b.severity === 'critical' || b.severity === 'high').length;
+    const totalBugs = allBugs.length;
+    
+    // Note: To bypass Row Level Security returning 1 (self), use the Service Role Key here
+    const sbAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    });
+    const { count: totalUsers } = await sbAdmin.from('users').select('*', { count: 'exact', head: true })
 
     return (
         <div className={styles.layout}>
@@ -40,24 +46,23 @@ export default async function AdminDashboardPage() {
                 <nav className={styles.sidebarNav}>
                     <Link href="/dashboard/admin" className={`${styles.navItem} ${styles.active}`}>
                         <LayoutDashboard size={20} />
-                        <span>Global Metrics</span>
+                        <span>Metrics</span>
                     </Link>
                     <Link href="/dashboard/admin/users" className={styles.navItem}>
                         <Users size={20} />
                         <span>Manage Users</span>
                     </Link>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Link href="/bugs" className={styles.navItem}>
-                            <Bug size={20} />
-                            <span>All Bugs Viewer</span>
-                        </Link>
-                        <Link href="/reports/story" className={styles.navItem} style={{ paddingLeft: '3rem', fontSize: '0.9rem' }}>
-                            <span>Story Reports</span>
-                        </Link>
-                    </div>
+                    <Link href="/bugs" className={styles.navItem}>
+                        <Bug size={20} />
+                        <span>All Bugs Viewer</span>
+                    </Link>
+                    <Link href="/reports" className={styles.navItem}>
+                        <BarChart2 size={20} />
+                        <span>Reports</span>
+                    </Link>
                     <Link href="/settings" className={styles.navItem}>
                         <Settings size={20} />
-                        <span>Global Settings</span>
+                        <span>Settings</span>
                     </Link>
                 </nav>
 
@@ -97,7 +102,7 @@ export default async function AdminDashboardPage() {
                         </div>
                         <div className={styles.statData}>
                             <h3>{criticalBugs || 0}</h3>
-                            <p>Global Critical Defects</p>
+                            <p>Critical Defects</p>
                         </div>
                     </div>
 

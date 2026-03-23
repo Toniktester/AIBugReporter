@@ -1,8 +1,12 @@
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from './page.module.css'
 import { Bug, ArrowLeft, Clock, AlertTriangle, Monitor, Globe, ChevronRight } from 'lucide-react'
+import { fetchJiraBugs } from '@/utils/jira'
+import BugsClient from './BugsClient'
 
 export default async function BugsListPage() {
     const supabase = await createClient()
@@ -13,11 +17,9 @@ export default async function BugsListPage() {
         redirect('/login')
     }
 
-    // Fetch bugs from db
-    const { data: bugs, error } = await supabase
-        .from('bugs')
-        .select('*')
-        .order('created_at', { ascending: false })
+    // Fetch all bugs from Jira API natively
+    const { bugs: allBugs, integrations } = await fetchJiraBugs(supabase as any);
+    const domain = integrations?.[0]?.config?.domain || 'toniktester';
 
     return (
         <div className={styles.layout}>
@@ -30,54 +32,7 @@ export default async function BugsListPage() {
                 </div>
             </header>
 
-            <div className={styles.tableContainer}>
-                <table className={styles.table}>
-                    <thead>
-                        <tr>
-                            <th>Bug ID</th>
-                            <th>Summary</th>
-                            <th>Severity</th>
-                            <th>Status</th>
-                            <th>Reported At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {bugs && bugs.map((bug: any) => (
-                            <tr key={bug.id}>
-                                <td className={styles.idCell}>#{bug.id.split('-')[0]}</td>
-                                <td className={styles.summaryCell}>{bug.summary}</td>
-                                <td>
-                                    <span className={`${styles.badge} ${styles['severity-' + bug.severity]}`}>
-                                        {bug.severity}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span className={`${styles.badge} ${styles['status-' + bug.status]}`}>
-                                        {bug.status.replace('_', ' ')}
-                                    </span>
-                                </td>
-                                <td className={styles.dateCell}>
-                                    {new Date(bug.created_at).toLocaleDateString()}
-                                </td>
-                                <td>
-                                    <Link href={`/bugs/${bug.id}`} className={styles.viewBtn}>
-                                        View Details <ChevronRight size={16} />
-                                    </Link>
-                                </td>
-                            </tr>
-                        ))}
-
-                        {(!bugs || bugs.length === 0) && (
-                            <tr>
-                                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                                    No bugs found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
-            </div>
+            <BugsClient allBugs={allBugs || []} domain={domain} />
         </div>
     )
 }

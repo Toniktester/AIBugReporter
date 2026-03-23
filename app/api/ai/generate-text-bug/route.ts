@@ -15,7 +15,7 @@ export async function POST(req: Request) {
         }
 
         // 2. Validate environment
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY?.replace(/^"|"$/g, '');
         if (!apiKey) {
             return NextResponse.json({ 
                 error: { message: "Gemini API Key is not configured in Netlify environment variables.", code: 500, status: "Internal Server Error" } 
