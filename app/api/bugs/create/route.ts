@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { GoogleGenAI } from '@google/genai';
 import { createClient } from '@/utils/supabase/server';
 
@@ -71,6 +72,36 @@ export async function POST(req: Request) {
         const basicAuth = Buffer.from(`${jiraConfig.email}:${jiraConfig.apiToken}`).toString('base64');
         const baseUrl = `https://${jiraConfig.domain}.atlassian.net/rest/api/3`;
 
+        let assigneeAccountId = null;
+        if (assignedTo) {
+            try {
+                const { createClient: createAdminClient } = require('@supabase/supabase-js');
+                const sbAdmin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+                    auth: { autoRefreshToken: false, persistSession: false }
+                });
+                
+                const { data: userProfile } = await sbAdmin.from('users').select('email').eq('id', assignedTo).single();
+                
+                if (userProfile?.email) {
+                    const searchUrl = `https://${jiraConfig.domain}.atlassian.net/rest/api/3/user/search?query=${encodeURIComponent(userProfile.email)}`;
+                    const userRes = await fetch(searchUrl, {
+                        headers: {
+                            'Authorization': `Basic ${basicAuth}`,
+                            'Accept': 'application/json'
+                        }
+                    });
+                    if (userRes.ok) {
+                        const usersData = await userRes.json();
+                        if (usersData && usersData.length > 0) {
+                            assigneeAccountId = usersData[0].accountId;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to resolve assignee account ID:", e);
+            }
+        }
+
         // 3. Duplicate Search
         try {
             const escapedSummary = summary.replace(/"/g, '\\"').replace(/\\/g, '\\\\');
@@ -98,8 +129,18 @@ export async function POST(req: Request) {
             // Continue if search fails as it might just be a parse error
         }
 
-        // 4. Create Issue in Jira (Moved logic up)
+        // 4. Create Issue in Jira
         const contentNodes: any[] = [];
+
+        const metadataLines = [];
+        if (startDate) metadataLines.push(`**Start Date:** ${startDate}`);
+        if (fixVersion) metadataLines.push(`**Fix Version:** ${fixVersion}`);
+        if (releaseVersion) metadataLines.push(`**Release Version:** ${releaseVersion}`);
+        
+        if (metadataLines.length > 0) {
+            contentNodes.push({ type: "paragraph", content: [{ type: "text", text: metadataLines.join(' | ') }] });
+            contentNodes.push({ type: "rule" });
+        }
 
         if (aiData.description || description) {
             contentNodes.push({ type: "paragraph", content: [{ type: "text", text: aiData.description || description || 'No description provided.' }] });
@@ -147,6 +188,10 @@ export async function POST(req: Request) {
             }
         };
 
+        if (labels && labels.length > 0) issuePayload.fields.labels = labels;
+        if (dueDate) issuePayload.fields.duedate = dueDate;
+        if (assigneeAccountId) issuePayload.fields.assignee = { accountId: assigneeAccountId };
+
         let issueKey = null;
         try {
             const createRes = await fetch(`${baseUrl}/issue`, {
@@ -168,6 +213,21 @@ export async function POST(req: Request) {
                 } else if (createData.errorMessages && createData.errorMessages.length > 0) {
                     errorMsg = createData.errorMessages.join(', ');
                 }
+
+                // Translate known Chinese localized API errors from Jira
+                if (createRes.status === 401 || createRes.status === 403) {
+                    if (errorMsg.includes('您无权在此项目中创建事务') || errorMsg.includes('permission')) {
+                        errorMsg = 'You do not have permission to create issues in this Jira project. Please contact your Jira administrator.';
+                    } else {
+                        errorMsg = 'Jira Authentication Failed: Please check your Token and Jira permissions.';
+                    }
+                } else if (errorMsg.includes('指定有效的事务类型') || errorMsg.includes('issue type')) {
+                    errorMsg = 'Jira Error: Specify a valid issue type. The application requires an issue type exactly named "Bug" to exist in your Jira project.';
+                } else if (/[\u4e00-\u9fa5]/.test(errorMsg)) {
+                     // Generic catchall for other Chinese errors
+                     errorMsg = 'Jira configuration error occurred. Please check project settings.';
+                }
+
                 return NextResponse.json({ error: errorMsg }, { status: 400 });
             }
 
@@ -292,6 +352,8 @@ export async function POST(req: Request) {
         }
 
         // Return pseudo bug object for frontend redirection.
+        revalidatePath('/dashboard', 'layout');
+        revalidatePath('/dashboard/lead');
         return NextResponse.json({ success: true, bug: { id: issueKey }, integrations: integrationResults });
     } catch (error: any) {
         console.error('Bug Creation Error:', error);
