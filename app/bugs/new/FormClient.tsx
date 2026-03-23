@@ -182,9 +182,8 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             }
 
             setTimeout(() => {
-                router.refresh()
-                router.push('/dashboard')
-            }, 3000)
+                window.location.href = '/dashboard';
+            }, 2500)
         } catch (e: any) {
             setError(e.message || 'An unexpected error occurred')
             setLoading(false)

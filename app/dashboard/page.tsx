@@ -88,41 +88,53 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             const jql = `project = "${config.projectKey}" AND ${baseJql}`;
             
             try {
-                const res = await fetch(baseUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Basic ${basicAuth}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ jql, maxResults: 100, fields: ['summary', 'status', 'priority', 'created'] })
-                });
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.issues) {
-                        const mappedIssues = data.issues.map((i: any) => {
-                            let sev = 'medium';
-                            const prio = i.fields.priority?.name?.toLowerCase() || '';
-                            if (prio === 'highest') sev = 'critical';
-                            else if (prio === 'high') sev = 'high';
-                            else if (prio === 'low' || prio === 'lowest') sev = 'low';
-                            
-                            let stat = 'open';
-                            const st = i.fields.status?.name?.toLowerCase() || '';
-                            if (st === 'in progress') stat = 'in_progress';
-                            else if (st === 'done' || st === 'resolved') stat = 'resolved';
-                            
-                            return {
-                                id: i.key,
-                                project_id: integration.project_id,
-                                summary: i.fields.summary,
-                                severity: sev,
-                                status: stat,
-                                created_at: i.fields.created
-                            };
-                        });
-                        allBugsRaw = [...allBugsRaw, ...mappedIssues];
+                let startAt = 0;
+                let fetchMore = true;
+                while (fetchMore) {
+                    const res = await fetch(baseUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Basic ${basicAuth}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ jql, startAt, maxResults: 100, fields: ['summary', 'status', 'priority', 'created'] })
+                    });
+                    
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.issues) {
+                            const mappedIssues = data.issues.map((i: any) => {
+                                let sev = 'medium';
+                                const prio = i.fields.priority?.name?.toLowerCase() || '';
+                                if (prio === 'highest') sev = 'critical';
+                                else if (prio === 'high') sev = 'high';
+                                else if (prio === 'low' || prio === 'lowest') sev = 'low';
+                                
+                                let stat = 'open';
+                                const st = i.fields.status?.name?.toLowerCase() || '';
+                                if (st === 'in progress') stat = 'in_progress';
+                                else if (st === 'done' || st === 'resolved') stat = 'resolved';
+                                
+                                return {
+                                    id: i.key,
+                                    project_id: integration.project_id,
+                                    summary: i.fields.summary,
+                                    severity: sev,
+                                    status: stat,
+                                    created_at: i.fields.created
+                                };
+                            });
+                            allBugsRaw = [...allBugsRaw, ...mappedIssues];
+                        }
+                        
+                        if (startAt + 100 >= (data.total || 0)) {
+                            fetchMore = false;
+                        } else {
+                            startAt += 100;
+                        }
+                    } else {
+                        fetchMore = false;
                     }
                 }
             } catch (e) {

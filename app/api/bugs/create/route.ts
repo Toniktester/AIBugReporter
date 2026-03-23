@@ -133,7 +133,6 @@ export async function POST(req: Request) {
         const contentNodes: any[] = [];
 
         const metadataLines = [];
-        if (startDate) metadataLines.push(`**Start Date:** ${startDate}`);
         if (fixVersion) metadataLines.push(`**Fix Version:** ${fixVersion}`);
         if (releaseVersion) metadataLines.push(`**Release Version:** ${releaseVersion}`);
         
@@ -175,10 +174,17 @@ export async function POST(req: Request) {
             );
         }
 
+        let priorityName = "Medium";
+        if (severity?.toLowerCase() === 'critical') priorityName = "Highest";
+        else if (severity?.toLowerCase() === 'high') priorityName = "High";
+        else if (severity?.toLowerCase() === 'medium') priorityName = "Medium";
+        else if (severity?.toLowerCase() === 'low') priorityName = "Lowest";
+
         const issuePayload: any = {
             fields: {
                 project: { key: jiraConfig.projectKey },
                 summary: summary,
+                priority: { name: priorityName },
                 description: {
                     type: "doc",
                     version: 1,
@@ -191,6 +197,7 @@ export async function POST(req: Request) {
         if (labels && labels.length > 0) issuePayload.fields.labels = labels;
         if (dueDate) issuePayload.fields.duedate = dueDate;
         if (assigneeAccountId) issuePayload.fields.assignee = { accountId: assigneeAccountId };
+        if (startDate) issuePayload.fields.customfield_10015 = startDate;
 
         let issueKey = null;
         try {
@@ -294,7 +301,9 @@ export async function POST(req: Request) {
         // Rule: Critical Issue Alerts are sent only to Microsoft Teams. 
         // Do not send Critical Alerts via Email/Outlook.
         
-        if (teamsIntegration && teamsIntegration.config?.webhook_url && (isCritical || postInTeams)) {
+        const teamsWebhookUrl = teamsIntegration?.config?.webhook_url || process.env.TEAMS_WEBHOOK_URL;
+
+        if (teamsWebhookUrl && (isCritical || postInTeams)) {
             try {
                 const teamsPayload = {
                     "@type": "MessageCard",
@@ -319,7 +328,7 @@ export async function POST(req: Request) {
                     }]
                 };
 
-                await fetch(teamsIntegration.config.webhook_url, {
+                await fetch(teamsWebhookUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(teamsPayload)
