@@ -27,8 +27,14 @@ export default function FormClient({ projects }: { projects: Project[] }) {
     const [jiraStoryId, setJiraStoryId] = useState('')
 
     // New fields
-    const [startDate, setStartDate] = useState('')
-    const [dueDate, setDueDate] = useState('')
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const threeDaysLater = new Date(today);
+    threeDaysLater.setDate(today.getDate() + 3);
+    const threeDaysStr = threeDaysLater.toISOString().split('T')[0];
+
+    const [startDate, setStartDate] = useState(todayStr)
+    const [dueDate, setDueDate] = useState(threeDaysStr)
     const [fixVersion, setFixVersion] = useState('')
     const [releaseVersion, setReleaseVersion] = useState('')
     const [labels, setLabels] = useState<string[]>([])
@@ -95,8 +101,19 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 if (ai.actual_result) setActual(ai.actual_result)
                 if (ai.severity) setSeverity(ai.severity.toLowerCase())
             } else {
-                const msg = data.error?.message || data.error || 'AI generation failed'
-                setError(typeof msg === 'object' ? JSON.stringify(msg) : msg)
+                let msg = data.error?.message;
+                if (!msg && data.error) msg = data.error;
+                if (!msg) msg = 'AI generation failed';
+                
+                if (typeof msg === 'object') {
+                    if (msg.code === 401 && !msg.message) {
+                        setError('Unauthorized: Your session may have expired or API Key is invalid. Please log in again.');
+                    } else {
+                        setError(JSON.stringify(msg));
+                    }
+                } else {
+                    setError(msg);
+                }
             }
         } catch (e: any) {
             setError(e.message || 'Connection error during AI generation')
@@ -164,7 +181,9 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 else if (jiraRes?.error) setError(`Jira Error: ${jiraRes.error}`)
             }
 
-            setTimeout(() => router.push('/dashboard'), 1500)
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 2500)
         } catch (e: any) {
             setError(e.message || 'An unexpected error occurred')
             setLoading(false)

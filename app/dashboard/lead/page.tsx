@@ -1,8 +1,10 @@
+export const dynamic = 'force-dynamic';
+
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../page.module.css'
-import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Briefcase } from 'lucide-react'
+import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Briefcase, CheckCircle2, AlertTriangle, ClipboardList } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
 
 export default async function LeadDashboardPage() {
@@ -48,7 +50,7 @@ export default async function LeadDashboardPage() {
                         <LayoutDashboard size={20} />
                         <span>Team Metrics</span>
                     </Link>
-                    <Link href="/dashboard/lead/bugs" className={styles.navItem}>
+                    <Link href="/bugs" className={styles.navItem}>
                         <Bug size={20} />
                         <span>Review Bugs</span>
                     </Link>
@@ -90,6 +92,11 @@ export default async function LeadDashboardPage() {
             <main className={styles.mainContent}>
                 <header className={styles.topbar}>
                     <h1>Team Lead Overview</h1>
+                    <div className={styles.actions} style={{ marginLeft: 'auto' }}>
+                        <Link href="/bugs/new" className={styles.primaryBtn} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--primary-color)', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', fontWeight: 'bold' }}>
+                            <Bug size={16} /> Report New Bug
+                        </Link>
+                    </div>
                 </header>
 
                 <div className={styles.dashboardGrid}>
