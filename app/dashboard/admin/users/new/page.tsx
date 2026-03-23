@@ -105,7 +105,7 @@ export default function CreateUserPage() {
                     </div>
 
                     <p className={styles.infoText}>
-                        Users will be created with the <code>@local.com</code> domain extension internally.
+                        Users will be created with the <code>@tonikbank.com</code> domain. They can sign in using just their username.
                     </p>
 
                     <button type="submit" disabled={loading} className={styles.submitButton}>

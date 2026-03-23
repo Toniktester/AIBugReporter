@@ -4,6 +4,27 @@
     margin: 0 auto;
 }
 
+.backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim, #94a3b8);
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+    text-decoration: none;
+}
+
+.backLink:hover { color: #fff; }
+
+.titleRow {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
 .header {
     display: flex;
     justify-content: space-between;
@@ -140,4 +161,118 @@
 .emptyState svg {
     margin-bottom: 1.5rem;
     opacity: 0.3;
+}
+
+/* ── Edit/Delete action bar ─── */
+.actionRow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.editRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.editButton {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--primary, #3498db);
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.editButton:hover {
+    background: rgba(52, 152, 219, 0.1);
+    border-color: var(--primary, #3498db);
+}
+
+.deleteButton {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #fca5a5;
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.deleteButton:hover {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+}
+
+.deleteButton:disabled, .editButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.roleSelect {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #fff;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    flex: 1;
+}
+
+.roleSelect:focus {
+    outline: none;
+    border-color: var(--primary, #3498db);
+}
+
+.roleSelect option { background: #1e1e2d; }
+
+.iconBtnSave {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    color: #86efac;
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.iconBtnSave:hover { background: rgba(34, 197, 94, 0.25); }
+
+.iconBtnCancel {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-dim, #94a3b8);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.iconBtnCancel:hover { background: rgba(255, 255, 255, 0.1); }
+
+.cardError {
+    font-size: 0.78rem;
+    color: #fca5a5;
+    margin: 0 0 0.5rem;
+    padding: 0.4rem 0.6rem;
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 4px;
 }

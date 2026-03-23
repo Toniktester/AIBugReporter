@@ -61,11 +61,7 @@ export default async function LeadDashboardPage() {
                             <span>Story Reports</span>
                         </Link>
                     </div>
-                    <Link href="/settings" className={styles.navItem}>
-                        <Settings size={20} />
-                        <span>Project Settings</span>
-                    </Link>
-                </nav>
+                    </nav>
 
                 <div className={styles.sidebarFooter}>
                     <div className={styles.userInfo}>

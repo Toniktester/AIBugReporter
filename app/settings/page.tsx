@@ -4,6 +4,7 @@ import Link from 'next/link'
 import styles from './page.module.css'
 import { ArrowLeft, Key, Settings as SettingsIcon, Bell, Shield, Database } from 'lucide-react'
 import IntegrationsClient from './IntegrationsClient'
+import ProjectsClient from './ProjectsClient'
 
 export default async function SettingsPage() {
     const supabase = await createClient()
@@ -14,8 +15,13 @@ export default async function SettingsPage() {
         redirect('/login')
     }
 
-    const { data: projects } = await supabase.from('projects').select('id, name').limit(1)
-    const projectId = projects?.[0]?.id;
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+
+    if (profile?.role !== 'admin' && user.email?.toLowerCase() !== 'admin@tonik.com') {
+        redirect('/dashboard');
+    }
+
+    const { data: projects } = await supabase.from('projects').select('id, name').order('name');
 
     return (
         <div className={styles.layout}>
@@ -32,8 +38,8 @@ export default async function SettingsPage() {
 
                 <div className={styles.sidebar}>
                     <nav className={styles.navMenu}>
-                        <a href="#general" className={`${styles.navItem} ${styles.active}`}>
-                            <SettingsIcon size={18} /> General
+                        <a href="#projects" className={`${styles.navItem} ${styles.active}`}>
+                            <SettingsIcon size={18} /> Projects
                         </a>
                         <a href="#integrations" className={styles.navItem}>
                             <Database size={18} /> Integrations & APIs
@@ -49,29 +55,17 @@ export default async function SettingsPage() {
 
                 <div className={styles.mainContent}>
 
-                    <section id="general" className={`${styles.card} glass`}>
-                        <h2>General Settings</h2>
-                        <form className={styles.form}>
-                            <div className={styles.formGroup}>
-                                <label>Project Name</label>
-                                <input type="text" defaultValue={projects?.[0]?.name || "Demo Project"} />
-                            </div>
-                            <div className={styles.formGroup}>
-                                <label>Project ID (For Extension)</label>
-                                <div className={styles.inputWithIcon}>
-                                    <Key size={16} className={styles.inputIcon} />
-                                    <input type="text" readOnly value={projectId || ''} className={styles.readOnly} />
-                                </div>
-                            </div>
-                            <button type="button" className={styles.primaryBtn}>Save Changes</button>
-                        </form>
+                    <section id="projects" className={`${styles.card} glass`}>
+                        <h2>Project Management</h2>
+                        <p className={styles.description}>Create and manage distinct projects to organize your defect tracking.</p>
+                        <ProjectsClient />
                     </section>
 
                     <section id="integrations" className={`${styles.card} glass`}>
                         <h2>Integrations & Webhooks</h2>
                         <p className={styles.description}>Connect your project to external issue trackers or chat applications.</p>
 
-                        <IntegrationsClient projectId={projectId} />
+                        <IntegrationsClient projects={projects || []} />
                     </section>
 
                     <section id="notifications" className={`${styles.card} glass`}>
@@ -82,14 +76,20 @@ export default async function SettingsPage() {
                                     <label style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>Email Notifications</label>
                                     <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Receive a daily summary of reported bugs.</span>
                                 </div>
-                                <input type="checkbox" defaultChecked style={{ width: '20px', height: '20px', accentColor: 'var(--primary-color)' }} />
+                                <label className={styles.switch}>
+                                    <input type="checkbox" defaultChecked />
+                                    <span className={styles.slider}></span>
+                                </label>
                             </div>
-                            <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
+                             <div className={styles.formGroup} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '1rem' }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>Critical Issue Alerts</label>
-                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Immediate email when a critical bug is logged.</span>
+                                    <label style={{ display: 'block', fontSize: '1rem', color: 'var(--text-primary)' }}>Critical Issue Alerts (Teams Only)</label>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Immediate Microsoft Teams alert when a critical bug is logged. Email is disabled for high-priority noise reduction.</span>
                                 </div>
-                                <input type="checkbox" defaultChecked style={{ width: '20px', height: '20px', accentColor: 'var(--primary-color)' }} />
+                                <label className={`${styles.switch} ${styles.disabled}`}>
+                                    <input type="checkbox" checked readOnly />
+                                    <span className={styles.slider}></span>
+                                </label>
                             </div>
                             <button type="button" className={styles.primaryBtn} style={{ marginTop: '1.5rem' }}>Save Preferences</button>
                         </form>

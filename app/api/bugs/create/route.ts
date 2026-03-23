@@ -16,7 +16,9 @@ export async function POST(req: Request) {
         const body = await req.json();
         const {
             summary, severity, projectId, environmentInfo, consoleLogs, networkLogs,
-            screenshotBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId
+            screenshotBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId,
+            // V10 new fields
+            startDate, dueDate, fixVersion, releaseVersion, labels, assignedTo, postInTeams
         } = body;
 
         if (!summary || !projectId) {
@@ -225,21 +227,27 @@ export async function POST(req: Request) {
             }
         }
 
-        // 7. Notify Teams
+        // 7. Notification Logic (V8 Rules)
         const integrationResults: any[] = [{ provider: 'jira', success: true, key: issueKey }];
-        if (teamsIntegration && teamsIntegration.config?.webhook_url) {
+        const isCritical = severity.toLowerCase() === 'critical';
+
+        // Rule: Critical Issue Alerts are sent only to Microsoft Teams. 
+        // Do not send Critical Alerts via Email/Outlook.
+        
+        if (teamsIntegration && teamsIntegration.config?.webhook_url && (isCritical || postInTeams)) {
             try {
                 const teamsPayload = {
                     "@type": "MessageCard",
                     "@context": "http://schema.org/extensions",
-                    "themeColor": "EF4444",
-                    "summary": `New Bug Reported: ${summary}`,
+                    "themeColor": isCritical ? "FF0000" : "EF4444",
+                    "summary": `${isCritical ? '🛑 CRITICAL:' : 'New Bug:'} ${summary}`,
                     "sections": [{
-                        "activityTitle": `🚨 New ${severity.toUpperCase()} Bug Logged`,
+                        "activityTitle": `${isCritical ? '🛑 CRITICAL' : '🚨 New'} ${severity.toUpperCase()} Bug Logged`,
                         "activitySubtitle": summary,
                         "facts": [
                             { "name": "Jira Key:", "value": issueKey },
                             { "name": "Status:", "value": "Open" },
+                            { "name": "Priority:", "value": severity.toUpperCase() },
                             { "name": "Root Cause Guess:", "value": aiData.root_cause || "N/A" }
                         ],
                         "markdown": true
@@ -260,6 +268,26 @@ export async function POST(req: Request) {
             } catch (e: any) {
                 console.error('Teams webhook error:', e);
                 integrationResults.push({ provider: 'teams', success: false, error: e.message });
+            }
+        }
+
+        // Rule: Outlook/Email notifications are SKIPPED for Critical bugs (Teams only override)
+        const outlookIntegration = integrations?.find(i => i.provider === 'outlook');
+        if (outlookIntegration && outlookIntegration.config?.webhook_url && !isCritical) {
+            try {
+                await fetch(outlookIntegration.config.webhook_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        subject: `Bug Reported: ${summary}`,
+                        body: `A new ${severity} bug has been logged in Jira: ${issueKey}`,
+                        link: `https://${jiraConfig.domain}.atlassian.net/browse/${issueKey}`
+                    })
+                });
+                integrationResults.push({ provider: 'outlook', success: true });
+            } catch (e: any) {
+                console.error('Outlook webhook error:', e);
+                integrationResults.push({ provider: 'outlook', success: false, error: e.message });
             }
         }
 

@@ -16,6 +16,12 @@ export async function GET(req: Request) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // RBAC: Only Admins can view configurations
+    const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+    if (profile?.role !== 'admin' && user.email?.toLowerCase() !== 'admin@tonik.com') {
+        return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const { data, error } = await supabase
         .from('integrations')
         .select('*')
@@ -35,6 +41,12 @@ export async function POST(req: Request) {
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
+        // RBAC: Only Admins can modify configurations
+        const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).single();
+        if (profile?.role !== 'admin' && user.email?.toLowerCase() !== 'admin@tonik.com') {
+            return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
         }
 
         const body = await req.json()

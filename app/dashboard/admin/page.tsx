@@ -20,6 +20,7 @@ export default async function AdminDashboardPage() {
     // Global counts
     const { count: criticalBugs } = await supabase.from('bugs').select('*', { count: 'exact', head: true }).eq('severity', 'critical')
     const { count: totalBugs } = await supabase.from('bugs').select('*', { count: 'exact', head: true })
+    // Note: totalUsers reflects all users in the public.users table (now correctly populated via admin client)
     const { count: totalUsers } = await supabase.from('users').select('*', { count: 'exact', head: true })
 
     // Fetch all bugs for unified analytics

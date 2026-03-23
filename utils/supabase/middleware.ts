@@ -54,10 +54,15 @@ export async function updateSession(request: NextRequest) {
     if (user) {
         let role = 'tester'
         try {
-            // Fetch the active user's role from the public.users table
+            // 1. Fetch the active user's role from the public.users table
             const { data: roleData, error: roleError } = await supabase.from('users').select('role').eq('id', user.id).single()
             if (!roleError && roleData) {
                 role = roleData.role
+            }
+
+            // 2. Hardcoded Admin Fallback (V8 Safe-guard)
+            if (user.email?.toLowerCase() === 'admin@tonik.com') {
+                role = 'admin'
             }
         } catch (e) {
             console.error('Middleware role lookup failed:', e)
