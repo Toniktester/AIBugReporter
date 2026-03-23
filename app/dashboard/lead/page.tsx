@@ -6,6 +6,7 @@ import Link from 'next/link'
 import styles from '../page.module.css'
 import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Briefcase, CheckCircle2, AlertTriangle, ClipboardList } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
+import { fetchJiraBugs } from '@/utils/jira'
 
 export default async function LeadDashboardPage() {
     const supabase = await createClient()
@@ -27,14 +28,11 @@ export default async function LeadDashboardPage() {
 
     const projectIds = userProjects?.map(p => p.project_id) || [];
 
-    // 2. Fetch bugs only for those projects
-    const { data: leadBugs } = await supabase
-        .from('bugs')
-        .select('*')
-        .in('project_id', projectIds.length > 0 ? projectIds : ['00000000-0000-0000-0000-000000000000']); // dummy UUID fallback
+    // 2. Fetch bugs from Jira only for those projects
+    const { bugs: leadBugs } = await fetchJiraBugs(supabase as any, projectIds.length > 0 ? projectIds : ['00000000-0000-0000-0000-000000000000']);
 
-    const criticalBugs = leadBugs?.filter(b => b.severity === 'critical') || [];
-    const openBugs = leadBugs?.filter(b => b.status === 'open' || b.status === 'in_progress') || [];
+    const criticalBugs = leadBugs?.filter((b: any) => b.severity === 'critical') || [];
+    const openBugs = leadBugs?.filter((b: any) => b.status === 'open' || b.status === 'in_progress') || [];
 
     return (
         <div className={styles.layout}>
@@ -54,15 +52,10 @@ export default async function LeadDashboardPage() {
                         <Bug size={20} />
                         <span>Review Bugs</span>
                     </Link>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <Link href="/reports" className={styles.navItem}>
-                            <BarChart2 size={20} />
-                            <span>Team Reports</span>
-                        </Link>
-                        <Link href="/reports/story" className={styles.navItem} style={{ paddingLeft: '3rem', fontSize: '0.9rem' }}>
-                            <span>Story Reports</span>
-                        </Link>
-                    </div>
+                    <Link href="/reports" className={styles.navItem}>
+                        <BarChart2 size={20} />
+                        <span>Reports</span>
+                    </Link>
                     </nav>
 
                 <div className={styles.sidebarFooter}>

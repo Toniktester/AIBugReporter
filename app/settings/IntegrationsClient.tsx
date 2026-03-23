@@ -119,8 +119,9 @@ export default function IntegrationsClient({ projects }: { projects: Project[] }
                             <button
                                 className={styles.outlineBtn}
                                 onClick={handleEditClick}
+                                style={isConnected && !isEditing ? { borderColor: '#4ade80', color: '#4ade80' } : {}}
                             >
-                                {isEditing ? 'Cancel' : (isConnected ? 'Configure' : 'Connect')}
+                                {isEditing ? 'Cancel' : (isConnected ? 'Connected' : 'Connect')}
                             </button>
                         </div>
 

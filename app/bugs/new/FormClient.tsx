@@ -17,7 +17,6 @@ export default function FormClient({ projects }: { projects: Project[] }) {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Core fields
-    const [projectId, setProjectId] = useState(projects[0]?.id || '')
     const [summary, setSummary] = useState('')
     const [description, setDescription] = useState('')
     const [steps, setSteps] = useState('')
@@ -25,6 +24,10 @@ export default function FormClient({ projects }: { projects: Project[] }) {
     const [actual, setActual] = useState('')
     const [severity, setSeverity] = useState('medium')
     const [jiraStoryId, setJiraStoryId] = useState('')
+
+    // Env fields
+    const [environment, setEnvironment] = useState('SIT')
+    const [testData, setTestData] = useState('')
 
     // New fields
     const today = new Date();
@@ -46,7 +49,8 @@ export default function FormClient({ projects }: { projects: Project[] }) {
     const [postInTeams, setPostInTeams] = useState(false)
 
     // Screenshot
-    const [imageBase64, setImageBase64] = useState<string | null>(null)
+    // Screenshots
+    const [imagesBase64, setImagesBase64] = useState<string[]>([])
     const [isDragging, setIsDragging] = useState(false)
 
     // UI state
@@ -60,29 +64,52 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             .then(r => r.ok ? r.json() : { users: [] })
             .then(d => setUsers(d.users || []))
             .catch(() => {})
+
+        // Check for PWA Shared Images
+        try {
+            const sharedImages = localStorage.getItem('pwa_shared_images');
+            if (sharedImages) {
+                const parsed = JSON.parse(sharedImages);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setImagesBase64(prev => [...prev, ...parsed]);
+                }
+                localStorage.removeItem('pwa_shared_images');
+            }
+            
+            const sharedText = localStorage.getItem('pwa_shared_text');
+            if (sharedText) {
+                setSummary(prev => prev ? `${prev} ${sharedText}` : sharedText);
+                localStorage.removeItem('pwa_shared_text');
+            }
+        } catch (e) {}
     }, [])
 
-    const handleImageUpload = (file: File) => {
-        if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return; }
-        if (file.size > 10 * 1024 * 1024) { setError('Image must be under 10MB.'); return; }
-        const reader = new FileReader()
-        reader.onloadend = () => setImageBase64(reader.result as string)
-        reader.readAsDataURL(file)
+    const handleImageUpload = (files: FileList | File[]) => {
+        const newImages: string[] = []
+        Array.from(files).forEach(file => {
+            if (!file.type.startsWith('image/')) { setError('Please upload an image file.'); return; }
+            if (file.size > 10 * 1024 * 1024) { setError('Image must be under 10MB.'); return; }
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                setImagesBase64(prev => [...prev, reader.result as string])
+            }
+            reader.readAsDataURL(file)
+        })
     }
 
     const handleAIGenerate = async () => {
-        if (!summary.trim() && !imageBase64) {
-            setError('Please enter a bug summary or upload a screenshot for AI to analyze.')
+        if (!summary.trim() && imagesBase64.length === 0) {
+            setError('Please enter a bug summary or upload screenshots for AI to analyze.')
             return
         }
         setAnalyzing(true); setError('')
         try {
             let endpoint = '/api/ai/generate-text-bug'
-            let body: any = { summary }
+            let body: any = { summary, jiraStoryId }
 
-            if (imageBase64) {
+            if (imagesBase64.length > 0) {
                 endpoint = '/api/ai/analyze-screenshot'
-                body = { imageBase64, summary }
+                body = { imagesBase64, summary, jiraStoryId }
             }
 
             const res = await fetch(endpoint, {
@@ -139,7 +166,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
     const onDragLeave = (e: DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false) }
     const onDrop = (e: DragEvent<HTMLDivElement>) => {
         e.preventDefault(); setIsDragging(false)
-        if (e.dataTransfer.files?.[0]) handleImageUpload(e.dataTransfer.files[0])
+        if (e.dataTransfer.files?.length > 0) handleImageUpload(e.dataTransfer.files)
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -156,14 +183,13 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                     steps_to_reproduce: steps,
                     expected_result: expected,
                     actual_result: actual,
-                    severity, projectId, jiraStoryId,
-                    screenshotBase64: imageBase64,
+                    severity, jiraStoryId,
+                    screenshotsBase64: imagesBase64,
                     startDate, dueDate, fixVersion, releaseVersion,
                     labels, assignedTo, postInTeams,
                     environmentInfo: {
-                        userAgent: navigator.userAgent,
-                        resolution: `${window.innerWidth}x${window.innerHeight}`,
-                        url: window.location.href
+                        environment,
+                        testData
                     }
                 })
             })
@@ -208,30 +234,44 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             {/* ── Screenshot Upload ─────────────────────────── */}
             <div className={styles.formGroup}>
                 <label className={styles.label}>
-                    <UploadCloud size={15} /> Screenshot <span className={styles.optional}>(Optional – AI will analyze it)</span>
+                    <UploadCloud size={15} /> Screenshots <span className={styles.optional}>(Optional – AI will analyze them)</span>
                 </label>
-                {!imageBase64 ? (
-                    <div
-                        className={`${styles.dropzone} ${isDragging ? styles.dropzoneActive : ''}`}
-                        onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
-                        onClick={() => fileInputRef.current?.click()}
-                    >
-                        <input type="file" accept="image/*" hidden ref={fileInputRef}
-                            onChange={e => e.target.files && handleImageUpload(e.target.files[0])} />
-                        <UploadCloud size={28} className={styles.dropIcon} />
-                        <p>Drag & drop a screenshot or <span className={styles.browseLink}>browse</span></p>
-                        <span className={styles.hint}>PNG, JPG, WEBP — max 10MB</span>
-                    </div>
-                ) : (
-                    <div className={styles.imagePreviewContainer}>
-                        <img src={imageBase64} alt="Screenshot Preview" className={styles.imagePreview} />
-                        <div className={styles.imageOverlay}>
-                            <button type="button" className={styles.removeImageBtn} onClick={() => setImageBase64(null)}>
-                                <X size={14} /> Remove
-                            </button>
-                        </div>
+                <div
+                    className={`${styles.dropzone} ${isDragging ? styles.dropzoneActive : ''}`}
+                    onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{ marginBottom: '1rem' }}
+                >
+                    <input type="file" accept="image/*" multiple hidden ref={fileInputRef}
+                        onChange={e => e.target.files && handleImageUpload(e.target.files)} />
+                    <UploadCloud size={28} className={styles.dropIcon} />
+                    <p>Drag & drop screenshots or <span className={styles.browseLink}>browse</span></p>
+                    <span className={styles.hint}>PNG, JPG, WEBP — max 10MB per image</span>
+                </div>
+                
+                {imagesBase64.length > 0 && (
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        {imagesBase64.map((img, idx) => (
+                            <div key={idx} className={styles.imagePreviewContainer} style={{ width: '120px', height: '120px' }}>
+                                <img src={img} alt={`Preview ${idx+1}`} className={styles.imagePreview} style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: '8px' }} />
+                                <div className={styles.imageOverlay} style={{ borderRadius: '8px' }}>
+                                    <button type="button" className={styles.removeImageBtn} onClick={() => setImagesBase64(prev => prev.filter((_, i) => i !== idx))}>
+                                        <X size={14} /> Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 )}
+            </div>
+
+            {/* ── Jira Story Link ──────────────────────────── */}
+            <div className={styles.formGroup}>
+                <label className={styles.label}>
+                    Jira Story Link <span className={styles.optional}>(To extract story context)</span>
+                </label>
+                <input type="text" value={jiraStoryId} onChange={e => setJiraStoryId(e.target.value)}
+                    placeholder="e.g. PROJ-123" className={styles.input} />
             </div>
 
             {/* ── Summary + AI Button ───────────────────────── */}
@@ -263,11 +303,8 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             {/* ── Project + Jira + Severity ─────────────────── */}
             <div className={styles.grid3}>
                 <div className={styles.formGroup}>
-                    <label className={styles.label}>Project <span className={styles.required}>*</span></label>
-                    <select value={projectId} onChange={e => setProjectId(e.target.value)} className={styles.select} required>
-                        <option value="" disabled>Select Project</option>
-                        {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                    <label className={styles.label}>Project</label>
+                    <input type="text" value="KAN (Global)" disabled className={styles.input} style={{ opacity: 0.7 }} />
                 </div>
                 <div className={styles.formGroup}>
                     <label className={styles.label}>Severity</label>
@@ -277,11 +314,6 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                         <option value="high">🟠 High</option>
                         <option value="critical">🔴 Critical</option>
                     </select>
-                </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Jira Story Link</label>
-                    <input type="text" value={jiraStoryId} onChange={e => setJiraStoryId(e.target.value)}
-                        placeholder="e.g. PROJ-123" className={styles.input} />
                 </div>
             </div>
 
@@ -312,6 +344,24 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                         <textarea value={actual} onChange={e => setActual(e.target.value)}
                             placeholder="What actually happens…" rows={2} className={styles.textarea} />
                     </div>
+                </div>
+            </div>
+
+            {/* ── Environment + Test Data ──────────────────── */}
+            <div className={styles.grid2}>
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Environment</label>
+                    <select value={environment} onChange={e => setEnvironment(e.target.value)} className={styles.select}>
+                        <option value="SIT">SIT</option>
+                        <option value="UAT">UAT</option>
+                        <option value="Pre-Prod">Pre-Prod</option>
+                        <option value="Prod">Prod</option>
+                    </select>
+                </div>
+                <div className={styles.formGroup}>
+                    <label className={styles.label}>Test Data <span className={styles.optional}>(Optional)</span></label>
+                    <input type="text" value={testData} onChange={e => setTestData(e.target.value)}
+                        placeholder="e.g. test@example.com" className={styles.input} />
                 </div>
             </div>
 
