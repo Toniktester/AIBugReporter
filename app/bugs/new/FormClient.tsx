@@ -13,7 +13,7 @@ import { createClient } from '@/utils/supabase/client'
 interface Project { id: string; name: string }
 interface User { id: string; full_name: string; email: string }
 
-export default function FormClient({ projects }: { projects: Project[] }) {
+export default function FormClient({ projects, serverToken }: { projects: Project[], serverToken?: string }) {
     const router = useRouter()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const descRef = useRef<HTMLTextAreaElement>(null)
@@ -128,7 +128,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
 
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
+            const token = serverToken || session?.access_token
 
             const res = await fetch(endpoint, {
                 method: 'POST',
@@ -136,7 +136,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                     'Content-Type': 'application/json',
                     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify({ ...body, backupToken: token })
             })
             const data = await res.json()
 
@@ -153,14 +153,17 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 if (!msg && data.error) msg = data.error;
                 if (!msg) msg = 'AI generation failed';
                 
-                if (typeof msg === 'object') {
-                    if (msg.code === 401 && !msg.message) {
+                try {
+                    const eStr = typeof msg === 'string' ? msg : JSON.stringify(msg);
+                    if (res.status === 401 || res.status === 403 || eStr.includes('401') || eStr.includes('Unauthorized')) {
                         setError('Unauthorized: Your session may have expired or API Key is invalid. Please log in again.');
+                    } else if (typeof msg === 'object') {
+                        setError(eStr);
                     } else {
-                        setError(JSON.stringify(msg));
+                        setError(msg.toString());
                     }
-                } else {
-                    setError(msg);
+                } catch(e) {
+                    setError('An unknown error occurred.');
                 }
             }
         } catch (e: any) {
@@ -198,7 +201,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
         try {
             const supabase = createClient()
             const { data: { session } } = await supabase.auth.getSession()
-            const token = session?.access_token
+            const token = serverToken || session?.access_token
 
             const res = await fetch('/api/bugs/create', {
                 method: 'POST',
@@ -218,7 +221,8 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                     environmentInfo: {
                         environment,
                         testData
-                    }
+                    },
+                    backupToken: token
                 })
             })
             const data = await res.json()

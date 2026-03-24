@@ -5,13 +5,18 @@ import { createClient } from '@/utils/supabase/server';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const supabase = await createClient();
+        const body = await req.json();
+        const { backupToken } = body;
+
         // Explicit fallback for Netlify cross-origin / edge cookie drops
         const authHeader = req.headers.get('Authorization');
-        let token: string | undefined = undefined;
-        if (authHeader) {
+        let token: string | undefined = backupToken;
+        if (!token && authHeader) {
             token = authHeader.replace('Bearer ', '');
         }
 
@@ -21,7 +26,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const body = await req.json();
+        // 2. Parse request (using the already parsed 'body' variable)
         const {
             summary, severity, environmentInfo, consoleLogs, networkLogs,
             screenshotsBase64, description, steps_to_reproduce, expected_result, actual_result, jiraStoryId,

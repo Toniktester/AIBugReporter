@@ -6,11 +6,12 @@ import styles from './page.module.css'
 import FormClient from './FormClient'
 
 export default async function NewBugPage() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
 
     if (!user) {
-        redirect('/login')
+        redirect('/login');
     }
 
     const { data: projects } = await supabase.from('projects').select('id, name').order('created_at', { ascending: false });
@@ -29,7 +30,7 @@ export default async function NewBugPage() {
             <div className={styles.container}>
                 <div className={`${styles.card} glass`}>
                     {projects && projects.length > 0 ? (
-                        <FormClient projects={projects} />
+                        <FormClient projects={projects} serverToken={session?.access_token || ''} />
                     ) : (
                         <div style={{ color: 'var(--text-muted)' }}>
                             <p>No projects found. Please ensure an Administrator has created a project before logging bugs.</p>

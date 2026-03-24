@@ -2,13 +2,20 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createClient } from '@/utils/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         // 1. Authenticate user
         const supabase = await createClient();
+        
+        // Extract body first to intercept Titanium token
+        const body = await req.json();
+        const { summary, jiraStoryId, backupToken } = body;
+
         const authHeader = req.headers.get('Authorization');
-        let token: string | undefined = undefined;
-        if (authHeader) {
+        let token: string | undefined = backupToken;
+        if (!token && authHeader) {
             token = authHeader.replace('Bearer ', '');
         }
         
@@ -27,9 +34,6 @@ export async function POST(req: Request) {
                 error: { message: "Gemini API Key is not configured in Netlify environment variables.", code: 500, status: "Internal Server Error" } 
             }, { status: 500 });
         }
-
-        const body = await req.json();
-        const { summary, jiraStoryId } = body;
 
         if (!summary) {
             return NextResponse.json({ error: 'No bug summary provided' }, { status: 400 });

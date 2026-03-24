@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
 import { createClient } from '@/utils/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         // 1. Authenticate user
         const supabase = await createClient();
+        
+        const body = await req.json();
+        const { imagesBase64, summary, jiraStoryId, backupToken } = body;
+
         const authHeader = req.headers.get('Authorization');
-        let token: string | undefined = undefined;
-        if (authHeader) {
+        let token: string | undefined = backupToken;
+        if (!token && authHeader) {
             token = authHeader.replace('Bearer ', '');
         }
         
@@ -28,8 +34,7 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        const body = await req.json();
-        const { imagesBase64, summary, jiraStoryId } = body;
+        // Proceed into Gemini Logic
 
         if (!imagesBase64 || !Array.isArray(imagesBase64) || imagesBase64.length === 0) {
             return NextResponse.json({ error: 'No images provided' }, { status: 400 });
