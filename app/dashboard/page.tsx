@@ -4,7 +4,7 @@ import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from './page.module.css'
-import { LogOut, LayoutDashboard, Bug, Settings, BarChart2 } from 'lucide-react'
+import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Mail } from 'lucide-react'
 import DashboardCharts from './DashboardCharts'
 import BugFilterBar from '@/components/BugFilterBar'
 import { fetchJiraBugs } from '@/utils/jira'
@@ -111,6 +111,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     <Link href="/reports" className={styles.navItem}>
                         <BarChart2 size={20} />
                         <span>Reports</span>
+                    </Link>
+                    <Link href="/dashboard/daily-status" className={styles.navItem}>
+                        <Mail size={20} />
+                        <span>Daily Status Report</span>
                     </Link>
                     </nav>
 

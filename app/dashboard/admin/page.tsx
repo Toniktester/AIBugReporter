@@ -5,7 +5,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../page.module.css'
-import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2 } from 'lucide-react'
+import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Mail } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
 import { fetchJiraBugs } from '@/utils/jira'
 import MobileMenuToggle from '@/components/MobileMenuToggle'
@@ -64,6 +64,10 @@ export default async function AdminDashboardPage() {
                     <Link href="/reports" className={styles.navItem}>
                         <BarChart2 size={20} />
                         <span>Reports</span>
+                    </Link>
+                    <Link href="/dashboard/daily-status" className={styles.navItem}>
+                        <Mail size={20} />
+                        <span>Daily Status Report</span>
                     </Link>
                     <Link href="/settings" className={styles.navItem}>
                         <Settings size={20} />
