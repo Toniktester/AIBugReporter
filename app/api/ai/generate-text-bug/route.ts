@@ -137,8 +137,12 @@ export async function POST(req: Request) {
     } catch (e: any) {
         console.error('Gemini Text Error / Network Issue:', e);
         
-        let errorMessage = e.message || 'Failed to generate bug report from text due to a network issue';
-        if (errorMessage.includes('API key not valid')) errorMessage = 'Invalid Gemini API Key provided. Please update your environment variables.';
+        let dump = e.stack ? e.stack.toString() : "";
+        let objDump = "";
+        try { objDump = JSON.stringify(e); } catch(x) {}
+
+        let errorMessage = `TRACE DUMP: Msg: ${e.message} | Name: ${e.name} | Obj: ${objDump} | Stack: ${dump.substring(0, 300)}`;
+        if (e.message && e.message.includes('API key not valid')) errorMessage = 'Invalid Gemini API Key provided. Please update your environment variables.';
         
         return NextResponse.json({ 
             error: { message: errorMessage, code: 500, status: "Internal Server Error" } 
