@@ -6,14 +6,13 @@ export async function POST(req: Request) {
     try {
         // 1. Authenticate user
         const supabase = await createClient();
-        
         const authHeader = req.headers.get('Authorization');
+        let token: string | undefined = undefined;
         if (authHeader) {
-            const token = authHeader.replace('Bearer ', '');
-            await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+            token = authHeader.replace('Bearer ', '');
         }
         
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ 
