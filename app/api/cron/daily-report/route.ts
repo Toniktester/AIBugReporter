@@ -105,7 +105,7 @@ export async function POST(req: Request) {
                                 ${bugs.filter((b: any) => b.severity === 'critical').slice(0, 10).map((b: any) => `
                                     <tr class="urgent-row">
                                         <td><strong><a href="${b.url || '#'}" target="_blank">${b.id}</a></strong></td>
-                                        <td>${b.title}</td>
+                                        <td>${b.summary}</td>
                                         <td>${b.status}</td>
                                     </tr>
                                 `).join('')}

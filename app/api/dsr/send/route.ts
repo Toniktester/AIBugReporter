@@ -105,7 +105,7 @@ function generateDSRHtml(config: any, bugs: any[]) {
                             ${bugs.filter((b: any) => b.severity === 'critical' || b.severity === 'high').slice(0, 10).map((b: any) => `
                                 <tr class="${b.severity === 'critical' ? 'urgent-row' : ''}">
                                     <td><strong><a href="${b.url || '#'}" target="_blank">${b.id}</a></strong></td>
-                                    <td>${b.title}</td>
+                                    <td>${b.summary}</td>
                                     <td><span style="color: ${b.severity === 'critical' ? '#ef4444' : '#f59e0b'}; font-weight: bold;">${b.severity.toUpperCase()}</span></td>
                                     <td>${b.status}</td>
                                 </tr>
