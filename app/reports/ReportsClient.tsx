@@ -17,7 +17,7 @@ export default function ReportsClient({ bugs }: { bugs: any[] }) {
     const [severityFilter, setSeverityFilter] = useState('all');
     const [dateRange, setDateRange] = useState('all');
     const [emailing, setEmailing] = useState(false);
-    const [emailModal, setEmailModal] = useState('kneelamegam@tonikbank.com');
+    const [emailModal, setEmailModal] = useState('kavinadhics@gmail.com');
 
     const filteredBugs = useMemo(() => {
         let res = bugs || [];
