@@ -17,8 +17,9 @@
 
 .headerLeft {
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
 }
 
 .backBtn {
@@ -40,6 +41,7 @@
     margin: 0;
     background: var(--primary-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -164,4 +166,9 @@
 
 .viewBtn:hover {
     color: var(--primary-hover);
+}
+
+@media (max-width: 768px) {
+    .layout { padding: 1rem; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
 }

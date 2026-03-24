@@ -282,3 +282,35 @@
     width: 100%;
     text-align: left;
 }
+
+/* Mobile Responsiveness Strategy */
+@media (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--glass-border);
+        flex-direction: row;
+        padding: 0.75rem 1rem;
+        height: auto;
+        overflow-x: auto;
+        align-items: center;
+        gap: 1.5rem;
+        flex-shrink: 0;
+    }
+    .sidebarHeader { margin-bottom: 0; flex-shrink: 0; }
+    .sidebarHeader h2 { display: none; }
+    .sidebarNav {
+        flex-direction: row;
+        gap: 0.5rem;
+    }
+    .navItem { padding: 0.6rem; border-radius: 50%; }
+    .navItem span { display: none; }
+    .sidebarFooter { display: none; }
+    .dashboardGrid, .chartsGrid { grid-template-columns: 1fr; gap: 1rem; }
+    .mainContent { padding: 1.25rem 1rem; overflow-y: visible; }
+    .topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
+}

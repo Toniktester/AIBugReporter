@@ -50,7 +50,11 @@ export default async function LeadDashboardPage() {
                     </Link>
                     <Link href="/bugs" className={styles.navItem}>
                         <Bug size={20} />
-                        <span>Review Bugs</span>
+                        <span>My Bugs</span>
+                    </Link>
+                    <Link href="/bugs/all" className={styles.navItem}>
+                        <Bug size={20} />
+                        <span>All Bugs</span>
                     </Link>
                     <Link href="/reports" className={styles.navItem}>
                         <BarChart2 size={20} />

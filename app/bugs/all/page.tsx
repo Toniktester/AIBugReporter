@@ -3,12 +3,12 @@ export const dynamic = 'force-dynamic';
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import styles from './page.module.css'
-import { Bug, ArrowLeft, Clock, AlertTriangle, Monitor, Globe, ChevronRight } from 'lucide-react'
+import styles from '../page.module.css'
+import { ArrowLeft } from 'lucide-react'
 import { fetchJiraBugs } from '@/utils/jira'
-import BugsClient from './BugsClient'
+import BugsClient from '../BugsClient'
 
-export default async function BugsListPage() {
+export default async function AllBugsListPage() {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
@@ -17,9 +17,8 @@ export default async function BugsListPage() {
         redirect('/login')
     }
 
-    // Fetch all bugs from Jira API natively that match this exact user's label
-    const userLabel = `reporter_${user.id.replace(/-/g, '')}`;
-    const { bugs: allBugs, integrations } = await fetchJiraBugs(supabase as any, undefined, `issuetype = "Bug" AND labels = "${userLabel}"`);
+    // Fetch all bugs from Jira API natively (System Wide)
+    const { bugs: allBugs, integrations } = await fetchJiraBugs(supabase as any);
     const domain = integrations?.[0]?.config?.domain || 'toniktester';
 
     return (
@@ -29,7 +28,7 @@ export default async function BugsListPage() {
                     <Link href="/dashboard" className={styles.backBtn}>
                         <ArrowLeft size={20} /> Dashboard
                     </Link>
-                    <h1>My Bug Reports</h1>
+                    <h1>All Bugs (System)</h1>
                 </div>
             </header>
 
