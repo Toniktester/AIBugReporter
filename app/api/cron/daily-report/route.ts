@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient as createAdminClient } from '@supabase/supabase-js';
 import { fetchJiraBugs } from '@/utils/jira';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY || 're_NnRCmKsP_PiYkcSE5oEtwgi6WTKnnW6Vy');
 
 export async function POST(req: Request) {
     try {
@@ -120,32 +122,26 @@ export async function POST(req: Request) {
         </html>
         `;
 
-        // Check for SMTP Configuration
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            console.warn("SMTP config missing! Emulating email dispatch...");
-            return NextResponse.json({ success: true, message: 'Report generated successfully but not sent (SMTP missing)', data: { totalBugs, criticalBugs } });
-        }
+        // Target recipients
+        const toList = (process.env.REPORT_STAKEHOLDERS || process.env.SMTP_USER || 'onboarding@resend.dev').split(',').map(e => e.trim());
 
-        // Setup Nodemailer Transporter
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-
-        // Send Email
-        const info = await transporter.sendMail({
-            from: process.env.SMTP_FROM || '"QA Bot" <noreply@aibugreporter.com>',
-            to: process.env.REPORT_STAKEHOLDERS || process.env.SMTP_USER,
+        // Send Email via Resend
+        const { data, error: resendError } = await resend.emails.send({
+            from: process.env.SMTP_FROM || 'AI Bug Reporter <onboarding@resend.dev>',
+            to: toList,
             subject: `[Daily QA Report] System Health: ${passFailStatus}`,
             html: htmlPayload
         });
 
-        return NextResponse.json({ success: true, messageId: info.messageId });
+        if (resendError) {
+            console.error("Resend API error:", resendError);
+            if (resendError.name === 'validation_error') {
+                return NextResponse.json({ error: 'Resend API validation error (Check domain verification)' }, { status: 403 });
+            }
+            throw new Error(resendError.message);
+        }
+
+        return NextResponse.json({ success: true, messageId: data?.id });
 
     } catch (e: any) {
         console.error("Daily Report Error:", e);
