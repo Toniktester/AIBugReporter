@@ -241,11 +241,13 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
                 setLoading(false); return
             }
 
+            let baseSuccess = "✅ Bug created successfully!";
             if (data.integrations?.length > 0) {
                 const jiraRes = data.integrations.find((i: any) => i.provider === 'jira')
-                if (jiraRes?.success) setSuccess(`✅ Bug submitted & created in Jira: ${jiraRes.key}`)
+                if (jiraRes?.success) baseSuccess += `\n(Synced to Jira: ${jiraRes.key})`;
                 else if (jiraRes?.error) setError(`Jira Error: ${jiraRes.error}`)
             }
+            setSuccess(baseSuccess);
 
             setTimeout(() => {
                 window.location.href = '/dashboard';
@@ -265,9 +267,16 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
                     <AlertTriangle size={16} /> {error}
                 </div>
             )}
+            
+            {/* Global Success Toast Overlay */}
             {success && (
-                <div className={styles.successBanner}>
-                    <CheckCircle2 size={16} /> {success}
+                <div className={styles.toastOverlay}>
+                    <div className={styles.toastCard}>
+                        <CheckCircle2 size={54} className={styles.toastIcon} />
+                        <h2 className={styles.toastTitle}>{success.split('\n')[0]}</h2>
+                        {success.split('\n')[1] && <p className={styles.toastSubtitle}>{success.split('\n')[1]}</p>}
+                        <div className={styles.toastLoadingBar}></div>
+                    </div>
                 </div>
             )}
 
