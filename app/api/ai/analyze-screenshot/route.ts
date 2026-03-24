@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type } from '@google/genai';
-import { createClient } from '@/utils/supabase/server';
+import { createClient as createJSClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
     try {
-        // 1. Authenticate user
-        const supabase = await createClient();
-        
         const body = await req.json();
         const { imagesBase64, summary, jiraStoryId, backupToken } = body;
 
@@ -18,6 +15,13 @@ export async function POST(req: Request) {
             token = authHeader.replace('Bearer ', '');
         }
         
+        // Pure stateless auth verification bypassing SSR edge cookies
+        const supabase = createJSClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { auth: { persistSession: false } }
+        );
+
         const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
 
         if (!user) {

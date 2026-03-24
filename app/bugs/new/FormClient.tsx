@@ -155,13 +155,7 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
                 
                 try {
                     const eStr = typeof msg === 'string' ? msg : JSON.stringify(msg);
-                    if (res.status === 401 || res.status === 403 || eStr.includes('401') || eStr.includes('Unauthorized')) {
-                        setError('Unauthorized: Your session may have expired or API Key is invalid. Please log in again.');
-                    } else if (typeof msg === 'object') {
-                        setError(eStr);
-                    } else {
-                        setError(msg.toString());
-                    }
+                    setError(`Error: ${eStr}`);
                 } catch(e) {
                     setError('An unknown error occurred.');
                 }
