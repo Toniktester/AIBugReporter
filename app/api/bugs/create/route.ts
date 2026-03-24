@@ -8,14 +8,14 @@ const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY })
 export async function POST(req: Request) {
     try {
         const supabase = await createClient();
-        
+        // Explicit fallback for Netlify cross-origin / edge cookie drops
         const authHeader = req.headers.get('Authorization');
+        let token: string | undefined = undefined;
         if (authHeader) {
-            const token = authHeader.replace('Bearer ', '');
-            await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+            token = authHeader.replace('Bearer ', '');
         }
-        
-        const { data: { user } } = await supabase.auth.getUser();
+
+        const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
