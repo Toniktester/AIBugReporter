@@ -29,6 +29,7 @@
     margin: 0;
     background: var(--primary-gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -290,27 +291,28 @@
         overflow-y: auto;
     }
     .sidebar {
-        width: 100%;
-        border-right: none;
-        border-bottom: 1px solid var(--glass-border);
-        flex-direction: row;
-        padding: 0.75rem 1rem;
-        height: auto;
-        overflow-x: auto;
-        align-items: center;
-        gap: 1.5rem;
-        flex-shrink: 0;
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 250px;
+        height: 100vh;
+        z-index: 100;
+        background: var(--background);
+        border-right: 1px solid var(--glass-border);
+        flex-direction: column;
+        transition: left 0.3s ease;
+        padding: 1.5rem;
     }
-    .sidebarHeader { margin-bottom: 0; flex-shrink: 0; }
-    .sidebarHeader h2 { display: none; }
+    .sidebarHeader { margin-bottom: 2.5rem; flex-shrink: 0; display: flex; }
+    .sidebarHeader h2 { display: block; }
     .sidebarNav {
-        flex-direction: row;
+        flex-direction: column;
         gap: 0.5rem;
     }
-    .navItem { padding: 0.6rem; border-radius: 50%; }
-    .navItem span { display: none; }
-    .sidebarFooter { display: none; }
+    .navItem { padding: 0.875rem 1rem; border-radius: 0.75rem; }
+    .navItem span { display: inline; }
+    .sidebarFooter { display: flex; }
     .dashboardGrid, .chartsGrid { grid-template-columns: 1fr; gap: 1rem; }
     .mainContent { padding: 1.25rem 1rem; overflow-y: visible; }
-    .topbar { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .topbar { flex-direction: row; align-items: center; justify-content: space-between; gap: 1rem; width: 100%; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 1rem; margin-bottom: 1rem; }
 }

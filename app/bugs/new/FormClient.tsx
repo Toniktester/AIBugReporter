@@ -8,6 +8,7 @@ import {
     CheckCircle2, Tag, Calendar, GitBranch, Package,
     Users, BellRing, Cpu
 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 interface Project { id: string; name: string }
 interface User { id: string; full_name: string; email: string }
@@ -125,9 +126,16 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 body = { imagesBase64, summary, jiraStoryId }
             }
 
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
+
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify(body)
             })
             const data = await res.json()
@@ -188,9 +196,16 @@ export default function FormClient({ projects }: { projects: Project[] }) {
         setLoading(true); setError(''); setSuccess('')
 
         try {
+            const supabase = createClient()
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
+
             const res = await fetch('/api/bugs/create', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
                 body: JSON.stringify({
                     summary, description,
                     steps_to_reproduce: steps,

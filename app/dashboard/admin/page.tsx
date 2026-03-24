@@ -5,9 +5,10 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import styles from '../page.module.css'
-import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2 } from 'lucide-react'
+import { LogOut, LayoutDashboard, Bug, Users, Settings, BarChart2, Mail } from 'lucide-react'
 import DashboardCharts from '../DashboardCharts'
 import { fetchJiraBugs } from '@/utils/jira'
+import MobileMenuToggle from '@/components/MobileMenuToggle'
 
 export default async function AdminDashboardPage() {
     const supabase = await createClient()
@@ -64,6 +65,10 @@ export default async function AdminDashboardPage() {
                         <BarChart2 size={20} />
                         <span>Reports</span>
                     </Link>
+                    <Link href="/dashboard/daily-status" className={styles.navItem}>
+                        <Mail size={20} />
+                        <span>Daily Status Report</span>
+                    </Link>
                     <Link href="/settings" className={styles.navItem}>
                         <Settings size={20} />
                         <span>Settings</span>
@@ -96,7 +101,10 @@ export default async function AdminDashboardPage() {
             {/* Main Content */}
             <main className={styles.mainContent}>
                 <header className={styles.topbar}>
-                    <h1>Global System Analytics</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <MobileMenuToggle />
+                        <h1>Global System Analytics</h1>
+                    </div>
                 </header>
 
                 <div className={styles.dashboardGrid}>
