@@ -5,7 +5,9 @@ import { createClient as createJSClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
+    let debugStage = 'INIT';
     try {
+        debugStage = 'REQ_JSON';
         const body = await req.json();
         const { summary, jiraStoryId, backupToken } = body;
 
@@ -15,6 +17,7 @@ export async function POST(req: Request) {
             token = authHeader.replace('Bearer ', '');
         }
         
+        debugStage = 'SUPABASE_CLIENT';
         // Pure stateless auth verification bypassing SSR edge cookies
         const supabase = createJSClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,6 +25,7 @@ export async function POST(req: Request) {
             { auth: { persistSession: false } }
         );
 
+        debugStage = 'SUPABASE_AUTH_GET_USER';
         const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
 
         if (!user) {
@@ -83,6 +87,7 @@ export async function POST(req: Request) {
         }
 
         // 3. Initialize Gemini
+        debugStage = 'GEMINI_INIT';
         const ai = new GoogleGenAI({ apiKey });
         const prompt = `
             You are an expert QA tester.
@@ -99,6 +104,7 @@ export async function POST(req: Request) {
             Return the output strictly in the following JSON schema:
         `;
 
+        debugStage = 'GEMINI_GENERATE_CONTENT';
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: [
@@ -130,8 +136,10 @@ export async function POST(req: Request) {
             throw new Error("Failed to generate text content from Gemini");
         }
 
+        debugStage = 'JSON_PARSE';
         const jsonOutput = JSON.parse(response.text);
 
+        debugStage = 'SUCCESS';
         return NextResponse.json({ success: true, ai_data: jsonOutput });
 
     } catch (e: any) {
@@ -141,7 +149,7 @@ export async function POST(req: Request) {
         let objDump = "";
         try { objDump = JSON.stringify(e); } catch(x) {}
 
-        let errorMessage = `TRACE DUMP: Msg: ${e.message} | Name: ${e.name} | Obj: ${objDump} | Stack: ${dump.substring(0, 300)}`;
+        let errorMessage = `TRACE DUMP Stage: ${debugStage} | Msg: ${e.message} | Name: ${e.name} | Obj: ${objDump} | Stack: ${dump.substring(0, 300)}`;
         if (e.message && e.message.includes('API key not valid')) errorMessage = 'Invalid Gemini API Key provided. Please update your environment variables.';
         
         return NextResponse.json({ 
