@@ -54,7 +54,11 @@ export default async function AdminDashboardPage() {
                     </Link>
                     <Link href="/bugs" className={styles.navItem}>
                         <Bug size={20} />
-                        <span>All Bugs Viewer</span>
+                        <span>My Bugs</span>
+                    </Link>
+                    <Link href="/bugs/all" className={styles.navItem}>
+                        <Bug size={20} />
+                        <span>All Bugs</span>
                     </Link>
                     <Link href="/reports" className={styles.navItem}>
                         <BarChart2 size={20} />

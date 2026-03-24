@@ -15,6 +15,10 @@ interface User { id: string; full_name: string; email: string }
 export default function FormClient({ projects }: { projects: Project[] }) {
     const router = useRouter()
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const descRef = useRef<HTMLTextAreaElement>(null)
+    const stepsRef = useRef<HTMLTextAreaElement>(null)
+    const expectedRef = useRef<HTMLTextAreaElement>(null)
+    const actualRef = useRef<HTMLTextAreaElement>(null)
 
     // Core fields
     const [summary, setSummary] = useState('')
@@ -83,6 +87,15 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             }
         } catch (e) {}
     }, [])
+
+    useEffect(() => {
+        [descRef, stepsRef, expectedRef, actualRef].forEach(ref => {
+            if (ref.current) {
+                ref.current.style.height = 'auto';
+                ref.current.style.height = ref.current.scrollHeight + 'px';
+            }
+        })
+    }, [description, steps, expected, actual])
 
     const handleImageUpload = (files: FileList | File[]) => {
         const newImages: string[] = []
@@ -265,13 +278,13 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 )}
             </div>
 
-            {/* ── Jira Story Link ──────────────────────────── */}
+            {/* ── Jira Story Key ──────────────────────────── */}
             <div className={styles.formGroup}>
                 <label className={styles.label}>
-                    Jira Story Link <span className={styles.optional}>(To extract story context)</span>
+                    Jira Story Key <span className={styles.optional}>(To extract story context)</span>
                 </label>
-                <input type="text" value={jiraStoryId} onChange={e => setJiraStoryId(e.target.value)}
-                    placeholder="e.g. PROJ-123" className={styles.input} />
+                <input type="text" value={jiraStoryId} onChange={e => setJiraStoryId(e.target.value.trim())}
+                    placeholder="e.g. KAN-19" className={styles.input} />
             </div>
 
             {/* ── Summary + AI Button ───────────────────────── */}
@@ -300,7 +313,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                 <span className={styles.hint}>Click AI AutoGenerate to auto-fill all fields using Gemini AI.</span>
             </div>
 
-            {/* ── Project + Jira + Severity ─────────────────── */}
+            {/* ── Project + Jira + Severity + Environment ─────────────────── */}
             <div className={styles.grid3}>
                 <div className={styles.formGroup}>
                     <label className={styles.label}>Project</label>
@@ -315,40 +328,6 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                         <option value="critical">🔴 Critical</option>
                     </select>
                 </div>
-            </div>
-
-            {/* ── Description ──────────────────────────────── */}
-            <div className={styles.formGroup}>
-                <label className={styles.label}>Description <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)}
-                    placeholder="Detailed bug description (auto-filled by AI or type manually)…"
-                    rows={3} className={styles.textarea} />
-            </div>
-
-            {/* ── Steps / Expected / Actual ─────────────────── */}
-            <div className={styles.grid2}>
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Steps to Reproduce <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
-                    <textarea value={steps} onChange={e => setSteps(e.target.value)}
-                        placeholder="1. Navigate to…&#10;2. Click…&#10;3. Observe…"
-                        rows={4} className={styles.textarea} />
-                </div>
-                <div className={styles.formGroup} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    <div>
-                        <label className={styles.label}>Expected Result <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
-                        <textarea value={expected} onChange={e => setExpected(e.target.value)}
-                            placeholder="What should happen…" rows={2} className={styles.textarea} />
-                    </div>
-                    <div>
-                        <label className={styles.label}>Actual Result <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
-                        <textarea value={actual} onChange={e => setActual(e.target.value)}
-                            placeholder="What actually happens…" rows={2} className={styles.textarea} />
-                    </div>
-                </div>
-            </div>
-
-            {/* ── Environment + Test Data ──────────────────── */}
-            <div className={styles.grid2}>
                 <div className={styles.formGroup}>
                     <label className={styles.label}>Environment</label>
                     <select value={environment} onChange={e => setEnvironment(e.target.value)} className={styles.select}>
@@ -358,12 +337,46 @@ export default function FormClient({ projects }: { projects: Project[] }) {
                         <option value="Prod">Prod</option>
                     </select>
                 </div>
-                <div className={styles.formGroup}>
-                    <label className={styles.label}>Test Data <span className={styles.optional}>(Optional)</span></label>
-                    <input type="text" value={testData} onChange={e => setTestData(e.target.value)}
-                        placeholder="e.g. test@example.com" className={styles.input} />
+            </div>
+
+            {/* ── Description ──────────────────────────────── */}
+            <div className={styles.formGroup}>
+                <label className={styles.label}>Description <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
+                <textarea ref={descRef} value={description} onChange={e => setDescription(e.target.value)}
+                    placeholder="Detailed bug description (auto-filled by AI or type manually)…"
+                    rows={3} className={styles.textarea} style={{ overflow: 'hidden' }} />
+            </div>
+
+            {/* ── Steps / Expected / Actual ─────────────────── */}
+            <div className={styles.grid2}>
+                <div className={styles.formGroup} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                        <label className={styles.label}>Steps to Reproduce <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
+                        <textarea ref={stepsRef} value={steps} onChange={e => setSteps(e.target.value)}
+                            placeholder="1. Navigate to…&#10;2. Click…&#10;3. Observe…"
+                            rows={4} className={styles.textarea} style={{ overflow: 'hidden' }} />
+                    </div>
+                    <div>
+                        <label className={styles.label}>Test Data <span className={styles.optional}>(Optional)</span></label>
+                        <input type="text" value={testData} onChange={e => setTestData(e.target.value)}
+                            placeholder="e.g. test@example.com" className={styles.input} />
+                    </div>
+                </div>
+                <div className={styles.formGroup} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div>
+                        <label className={styles.label}>Expected Result <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
+                        <textarea ref={expectedRef} value={expected} onChange={e => setExpected(e.target.value)}
+                            placeholder="What should happen…" rows={2} className={styles.textarea} style={{ overflow: 'hidden' }} />
+                    </div>
+                    <div>
+                        <label className={styles.label}>Actual Result <span className={styles.aiTag}><Cpu size={11} /> AI</span></label>
+                        <textarea ref={actualRef} value={actual} onChange={e => setActual(e.target.value)}
+                            placeholder="What actually happens…" rows={2} className={styles.textarea} style={{ overflow: 'hidden' }} />
+                    </div>
                 </div>
             </div>
+
+
 
             {/* ── Dates + Versions ─────────────────────────── */}
             <div className={styles.grid4}>
@@ -436,7 +449,7 @@ export default function FormClient({ projects }: { projects: Project[] }) {
             <button type="submit" className={styles.submitBtn} disabled={loading || analyzing}>
                 {loading
                     ? <><span className={styles.spinner}></span> Submitting…</>
-                    : <><Send size={16} /> Submit Bug Report</>
+                    : <><Send size={16} /> Submit Bug</>
                 }
             </button>
 

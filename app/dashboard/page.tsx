@@ -103,6 +103,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                         <Bug size={20} />
                         <span>My Bugs</span>
                     </Link>
+                    <Link href="/bugs/all" className={styles.navItem}>
+                        <Bug size={20} />
+                        <span>All Bugs</span>
+                    </Link>
                     <Link href="/reports" className={styles.navItem}>
                         <BarChart2 size={20} />
                         <span>Reports</span>
@@ -177,9 +181,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                     </div>
                 </div>
 
-                <div style={{ marginTop: '2rem' }}>
-                    <BugFilterBar projects={projects || []} />
-                </div>
+
 
                 {jiraIntegrations?.length === 0 && (
                     <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--card-bg)', borderRadius: '12px', marginTop: '2rem', border: '1px solid var(--border-color)' }}>

@@ -192,7 +192,9 @@ export async function POST(req: Request) {
             }
         };
 
-        if (labels && labels.length > 0) issuePayload.fields.labels = labels;
+        const reporterLabel = `reporter_${user.id.replace(/-/g, '')}`;
+        issuePayload.fields.labels = labels && labels.length > 0 ? [...labels, reporterLabel] : [reporterLabel];
+
         if (dueDate) issuePayload.fields.duedate = dueDate;
         if (assigneeAccountId) issuePayload.fields.assignee = { accountId: assigneeAccountId };
         if (startDate) issuePayload.fields.customfield_10015 = startDate;
