@@ -132,10 +132,7 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
 
             const res = await fetch(endpoint, {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ ...body, backupToken: token })
             })
             const data = await res.json()
@@ -199,10 +196,7 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
 
             const res = await fetch('/api/bugs/create', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     summary, description,
                     steps_to_reproduce: steps,
