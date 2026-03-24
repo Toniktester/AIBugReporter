@@ -6,6 +6,13 @@ export async function POST(req: Request) {
     try {
         // 1. Authenticate user
         const supabase = await createClient();
+        
+        const authHeader = req.headers.get('Authorization');
+        if (authHeader) {
+            const token = authHeader.replace('Bearer ', '');
+            await supabase.auth.setSession({ access_token: token, refresh_token: '' });
+        }
+        
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {

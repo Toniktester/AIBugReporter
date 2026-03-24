@@ -8,6 +8,7 @@ import { LogOut, LayoutDashboard, Bug, Settings, BarChart2 } from 'lucide-react'
 import DashboardCharts from './DashboardCharts'
 import BugFilterBar from '@/components/BugFilterBar'
 import { fetchJiraBugs } from '@/utils/jira'
+import MobileMenuToggle from '@/components/MobileMenuToggle'
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<any> }) {
     const supabase = await createClient()
@@ -140,7 +141,10 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
             {/* Main Content */}
             <main className={styles.mainContent}>
                 <header className={styles.topbar}>
-                    <h1>My Tester Dashboard</h1>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <MobileMenuToggle />
+                        <h1>My Tester Dashboard</h1>
+                    </div>
                     <div className={styles.actions}>
                         <Link href="/bugs/new" className={styles.primaryBtn} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Bug size={16} /> Report New Bug
