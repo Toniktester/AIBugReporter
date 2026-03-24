@@ -25,16 +25,18 @@ export async function POST(req: Request) {
         const { data: { user } } = token ? await supabase.auth.getUser(token) : await supabase.auth.getUser();
 
         if (!user) {
+            console.error("Auth Error: Invalid token or missing session for AI path");
             return NextResponse.json({ 
-                error: { message: "You must be logged in to analyze screenshots", code: 401, status: "Unauthorized" } 
+                error: { message: "You must be logged in to analyze screenshots. Token may be invalid or expired.", code: 401, status: "Unauthorized" } 
             }, { status: 401 });
         }
 
         // 2. Validate environment
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY?.replace(/^"|"$/g, '');
+        const apiKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY)?.replace(/^"|"$/g, '');
         if (!apiKey) {
+            console.error("AI Error: Missing API key in environment variables");
             return NextResponse.json({ 
-                error: { message: "Gemini API Key is not configured in Netlify environment variables.", code: 500, status: "Internal Server Error" } 
+                error: { message: "AI API Key is missing. Please configure GOOGLE_GENERATIVE_AI_API_KEY or GEMINI_API_KEY in Netlify.", code: 500, status: "Internal Server Error" } 
             }, { status: 500 });
         }
 
@@ -141,8 +143,11 @@ export async function POST(req: Request) {
 
     } catch (e: any) {
         console.error('Gemini Vision Error:', e);
+        let errorMessage = e.message || 'Failed to analyze screenshot';
+        if (errorMessage.includes('API key not valid')) errorMessage = 'Invalid Gemini API Key. Please update GOOGLE_GENERATIVE_AI_API_KEY in your Netlify Environment settings.';
+        
         return NextResponse.json({ 
-            error: { message: e.message || 'Failed to analyze screenshot', code: 500, status: "Internal Server Error" } 
+            error: { message: errorMessage, code: 500, status: "Internal Server Error" } 
         }, { status: 500 });
     }
 }

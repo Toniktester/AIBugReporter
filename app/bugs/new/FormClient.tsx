@@ -126,18 +126,40 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
                 body = { imagesBase64, summary, jiraStoryId }
             }
 
-            const supabase = createClient()
-            const { data: { session } } = await supabase.auth.getSession()
-            const token = serverToken || session?.access_token
+            const supabase = createClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = serverToken || session?.access_token;
 
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...body, backupToken: token })
-            })
-            const data = await res.json()
+            let res;
+            let data;
+            let attempt = 0;
+            const maxRetries = 3;
 
-            if (res.ok && data.ai_data) {
+            while (attempt < maxRetries) {
+                try {
+                    res = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...body, backupToken: token })
+                    });
+                    data = await res.json();
+                    
+                    if (res.ok) break;
+                    // If it's a client error (e.g. 401 Unauthorized), do not retry
+                    if (res.status >= 400 && res.status < 500) break;
+
+                } catch (e: any) {
+                    if (attempt === maxRetries - 1) throw e;
+                }
+                
+                attempt++;
+                if (attempt < maxRetries) {
+                    // Exponential backoff: 1s, 2s...
+                    await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                }
+            }
+
+            if (res && res.ok && data?.ai_data) {
                 const ai = data.ai_data
                 if (ai.summary && !summary) setSummary(ai.summary)
                 if (ai.description) setDescription(ai.description)
@@ -146,9 +168,7 @@ export default function FormClient({ projects, serverToken }: { projects: Projec
                 if (ai.actual_result) setActual(ai.actual_result)
                 if (ai.severity) setSeverity(ai.severity.toLowerCase())
             } else {
-                let msg = data.error?.message;
-                if (!msg && data.error) msg = data.error;
-                if (!msg) msg = 'AI generation failed';
+                let msg = data?.error?.message || data?.error || 'AI generation failed after retries';
                 
                 try {
                     const eStr = typeof msg === 'string' ? msg : JSON.stringify(msg);
