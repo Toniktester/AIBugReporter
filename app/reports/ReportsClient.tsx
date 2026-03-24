@@ -80,15 +80,31 @@ export default function ReportsClient({ bugs }: { bugs: any[] }) {
             return;
         }
         
-        let reportText = `System Defect Report\nTotal Defects: ${totalCount}\nCritical/High Action Items: ${criticalCount}\nResolution Rate: ${resolutionRate}%\n\nDetails:\n`;
-        filteredBugs.slice(0, 50).forEach((b: any) => {
-            reportText += `[${b.id}] ${b.summary} - Priority: ${b.severity} - Status: ${b.status}\n`;
-        });
-        
-        const mailtoLink = `mailto:${encodeURIComponent(emailModal)}?subject=${encodeURIComponent(`Tonik Defect Report - ${totalCount} Bugs`)}&body=${encodeURIComponent(reportText)}`;
-        window.location.href = mailtoLink;
-        
-        setEmailModal('kneelamegam@tonikbank.com');
+        setEmailing(true);
+        try {
+            const res = await fetch('/api/dsr/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    configOverride: {
+                        to: emailModal,
+                        subject: `Daily System Defect Report - ${totalCount} Active Bugs`,
+                        content: `<b>Dispatched instantly from the live Analytics Dashboard!</b><br/><br/>At a glance:<br/>- Critical/High Items: ${criticalCount}<br/>- Resolution Rate: ${resolutionRate}%`
+                    }
+                })
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                alert(data.error || "Failed to dispatch Resend email. Ensure the Netlify environment is loaded properly.");
+            } else {
+                alert("Report dispatched seamlessly via Resend!");
+                setEmailModal('');
+            }
+        } catch (e: any) {
+            alert("Network error while attempting to trigger Resend automation.");
+        }
+        setEmailing(false);
     };
 
     return (
